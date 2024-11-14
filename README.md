@@ -49,21 +49,51 @@ TODO
 
 # How to's & guides
 
-### Router support
-
-TODO
-
 ### Reactivity and Signals
 
-TODO
+```rs
+let signal_count = Signal::new(0);
+
+El::new("button").text("add").on_event("click", move |_| {
+    let count = signal_count.get() + 1;
+    signal_count.set(count);
+});
+```
+
+Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L94)
 
 ### Browser APIs
 
-TODO
+```rs
+Js::invoke("alert('hello browser')", &[]);
+```
+
+Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L87)
+
+### Router support
+
+```rs
+thread_local! {
+    pub static ROUTER: RefCell<Router> = RefCell::new(Router::default());
+}
+
+ROUTER.with(|s| { s.borrow().navigate("page1"); });
+```
+
+Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L21)
 
 ### Async Support
 
-TODO
+```rs
+Runtime::block_on(async move {
+    let url = format!("https://pokeapi.co/api/v2/pokemon/{}", 1);
+    let result = fetch_json(HttpMethod::GET, url, None).await;
+    let name = result["name"].as_str().unwrap();
+    Js::invoke("alert({})", &[Str(&name.to_owned())]);
+});
+```
+
+Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L83)
 
 # Backstory
 
