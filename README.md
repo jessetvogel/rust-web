@@ -1,4 +1,4 @@
-# TinyWeb 🔌 Rust on the client. No dependencies.
+# TinyWeb 🌱 Rust on the client. No dependencies.
 
 Build the client-side with Rust. Compbine it with any http framework to build fullstack applications!
 
@@ -18,7 +18,7 @@ Aims to sove simplicity with its tiny footprint (< 800 lines of Rust), it's desi
 - No build step
 - Just HTML & Rust (Wasm)
 
-**Note:** No build step besides `cargo build` and `cp`
+**Note:** No build step besides `cargo build`
 
 # Getting Started
 
@@ -45,9 +45,31 @@ pub fn main() {
 
 # How it works
 
-TODO
+At first, the Rust code is compiled to wasm with `cargo build --target wasm32-unknown-unknown -r`. That wasm file is then loaded into the HTML once [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L114)
+is triggered in [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L91). In contrast to other tools that use `wasm-bindgen`, the generated javascript file is static and loads the first `.wasm` file it encounters.
+
+Once the wasm file is loaded, the `main` function is [called](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L96) that acts as an initialization hook. Then, every time a rust function wants to invoke a browser API it uses the [__invoke_and_return](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs#L84) which calls the [corresponding function](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L64) in javascript.
+
+Callbacks such as event listeners are register through the `__invoke_and_return` function and then call a dedicated function in wasm named [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs#L14).
 
 # How to's & guides
+
+### Index html
+
+```html
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+        <script src="https://cdn.jsdelivr.net/gh/LiveDuo/tinyweb/src/js/main.js"></script>
+        <script type="application/wasm" src="client.wasm"></script>
+    </head>
+    <body></body>
+</html>
+```
+
+Check it out [here](https://github.com/LiveDuo/tinyweb-starter/blob/master/public/index.html)
 
 ### Reactivity and Signals
 
