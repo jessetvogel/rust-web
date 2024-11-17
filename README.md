@@ -30,7 +30,7 @@ Aims to sove simplicity with its tiny footprint (< 800 lines of Rust) and by hav
 
 ```rs
 use tinyweb::element::El;
-use tinyweb::invoke::JS;
+use tinyweb::invoke::Js;
 
 fn component() -> El {
     El::new("div")
@@ -93,7 +93,7 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 ### Browser APIs
 
 ```rs
-use tinyweb::invoke::JS;
+use tinyweb::invoke::Js;
 
 Js::invoke("alert('hello browser')", &[]);
 ```
@@ -119,7 +119,7 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 ```rs
 use tinyweb::http::{fetch, FetchResponse, FetchOptions};
 use tinyweb::runtime::Runtime;
-use tinyweb::invoke::JS;
+use tinyweb::invoke::Js;
 
 Runtime::block_on(async move {
     let url = "https://pokeapi.co/api/v2/pokemon/1";
