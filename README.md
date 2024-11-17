@@ -28,6 +28,9 @@ Aims to sove simplicity with its tiny footprint (< 800 lines of Rust) and by hav
 
 ### Create a new project
 
+Create a new Rust project with `cargo new tinyweb-example --lib`:
+
+Update the `src/lib.rs`:
 ```rs
 use tinyweb::element::El;
 use tinyweb::invoke::Js;
@@ -46,6 +49,25 @@ pub fn main() {
 }
 ```
 
+Then, create an `index.html` in a new `public` folder:
+```html
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <script src="https://cdn.jsdelivr.net/gh/LiveDuo/tinyweb/src/js/main.js"></script>
+        <script type="application/wasm" src="client.wasm"></script>
+    </head>
+    <body></body>
+</html>
+```
+
+Lastly, add `crate-type =["cdylib"]` right below `[lib]` section in `Cargo.toml`.
+
+Then build the project with `cargo build --target wasm32-unknown-unknown -r` and `cp target/wasm32-unknown-unknown/release/*.wasm public/client.wasm` to get the `.wasm` in the right place. You can now serve the contents of the `public` folder with your favourite static http server.
+
+
+
 # How it works
 
 At first, the Rust code is compiled to wasm with `cargo build --target wasm32-unknown-unknown -r` and has to be serve alongside `index.html`. Once `index.html` is loaded in the browser, a [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L114) event 
@@ -59,17 +81,7 @@ Every time a rust function wants to invoke a browser API it uses the [__invoke_a
 
 ### Index html
 
-```html
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <script src="https://cdn.jsdelivr.net/gh/LiveDuo/tinyweb/src/js/main.js"></script>
-        <script type="application/wasm" src="client.wasm"></script>
-    </head>
-    <body></body>
-</html>
-```
+
 
 Check it out [here](https://github.com/LiveDuo/tinyweb-starter/blob/master/public/index.html)
 
