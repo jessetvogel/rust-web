@@ -6,9 +6,9 @@ Build the client-side with Rust. Compbine it with any http framework to build fu
 
 TinyWeb is a toolkit to build web applications that care about simplicity and correctness.
 
-Aims to solve robustness with using Rust's strict type system, zero-cost abstractions and great built-in tooling.
+Aims to solve robustness by using Rust's strict type system, zero-cost abstractions and great built-in tooling.
 
-Aims to sove simplicity with its tiny footprint (< 800 lines of Rust), it's design with no build step and by having no external dependencies.
+Aims to sove simplicity with its tiny footprint (< 800 lines of Rust) and by having no build step and no external dependencies.
 
 # Features
 
@@ -29,28 +29,31 @@ Aims to sove simplicity with its tiny footprint (< 800 lines of Rust), it's desi
 ### Create a new project
 
 ```rs
+use tinyweb::element::El;
+use tinyweb::invoke::JS;
+
 fn component() -> El {
     El::new("div")
-        .classes(&["m-2"])
-        .child(El::new("button").text("page 1").classes(&BUTTON_CLASSES).on_event("click", move |_| {
+        .child(El::new("button").text("print").on_event("click", move |_| {
             Js::invoke("alert('hello browser')", &[]);
         }))
 }
 
 #[no_mangle]
 pub fn main() {
+    let body = Js::invoke_ref("return document.querySelector('body')"]);
     component().mount(&body);
 }
 ```
 
 # How it works
 
-At first, the Rust code is compiled to wasm with `cargo build --target wasm32-unknown-unknown -r`. That wasm file is then loaded into the HTML once [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L114)
-is triggered in [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L91). In contrast to other tools that use `wasm-bindgen`, the generated javascript file is static and loads the first `.wasm` file it encounters.
+At first, the Rust code is compiled to wasm with `cargo build --target wasm32-unknown-unknown -r` and has to be serve alongside `index.html`. Once `index.html` is loaded in the browser, a [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L114) event 
+is triggered in [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L91) which loads the wasm file. Note that, in contrast to other Rust based frameworks, the javascript file here is static. That's because it does not use `wasm-bindgen` to build the browser bindings but instead the only types that are passed to and from javascript are primitive types such as numbers, strings, buffers and references to javascript objects.
 
-Once the wasm file is loaded, the `main` function is [called](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L96) that acts as an initialization hook. Then, every time a rust function wants to invoke a browser API it uses the [__invoke_and_return](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs#L84) which calls the [corresponding function](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L64) in javascript.
+Once the wasm file is loaded, the `main` function is [called](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L96) and this function acts as an initialization hook similar to `DOMContentLoaded` in vanilla javascript or `useEffect` in React. The `main` function usually makes the initial rendering and registers listeners for different DOM elements.
 
-Callbacks such as event listeners are register through the `__invoke_and_return` function and then call a dedicated function in wasm named [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs#L14).
+Every time a rust function wants to invoke a browser API it uses the [__invoke_and_return](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs#L84) which calls the [corresponding function](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L64) in javascript. Callbacks such as event listeners are register through the `__invoke_and_return` function and then call a dedicated function in wasm named [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs#L14).
 
 # How to's & guides
 
@@ -61,7 +64,6 @@ Callbacks such as event listeners are register through the `__invoke_and_return`
 <html>
     <head>
         <meta charset="utf-8">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
         <script src="https://cdn.jsdelivr.net/gh/LiveDuo/tinyweb/src/js/main.js"></script>
         <script type="application/wasm" src="client.wasm"></script>
     </head>
@@ -74,6 +76,10 @@ Check it out [here](https://github.com/LiveDuo/tinyweb-starter/blob/master/publi
 ### Reactivity and Signals
 
 ```rs
+
+use tinyweb::signals::Signal;
+use tinyweb::element::El;
+
 let signal_count = Signal::new(0);
 
 El::new("button").text("add").on_event("click", move |_| {
@@ -87,6 +93,8 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 ### Browser APIs
 
 ```rs
+use tinyweb::invoke::JS;
+
 Js::invoke("alert('hello browser')", &[]);
 ```
 
@@ -95,6 +103,8 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 ### Router support
 
 ```rs
+use tinyweb::router::{Page, Router};
+
 thread_local! {
     pub static ROUTER: RefCell<Router> = RefCell::new(Router::default());
 }
@@ -107,10 +117,17 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 ### Async Support
 
 ```rs
+use tinyweb::http::{fetch, FetchResponse, FetchOptions};
+use tinyweb::runtime::Runtime;
+use tinyweb::invoke::JS;
+
 Runtime::block_on(async move {
-    let url = format!("https://pokeapi.co/api/v2/pokemon/{}", 1);
-    let result = fetch_json(HttpMethod::GET, url, None).await;
-    let name = result["name"].as_str().unwrap();
+    let url = "https://pokeapi.co/api/v2/pokemon/1";
+    let fetch_options = FetchOptions { method: HttpMethod::GET, url, ..Default::default()};
+    let result = fetch(fetch_options).await;
+    let result_text = match fetch_res { FetchResponse::Text(_, d) => Ok(d), _ => Err(()), };
+    let result_json = json::parse(&result_text.unwrap()).unwrap();
+    let name = result_json["name"].as_str().unwrap();
     Js::invoke("alert({})", &[Str(&name.to_owned())]);
 });
 ```
