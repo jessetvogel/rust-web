@@ -66,8 +66,8 @@ const getWasmImports = () => {
             if (typeof result === "undefined") {
               return (BigInt(0) << 32n) | BigInt(0)
             }  else if (typeof result === "number") {
-              // TODO does not work with floats
-              return (BigInt(1) << 32n) | BigInt(result)
+              const ptr = writeBufferToMemory(textEncoder.encode(result))
+              return (BigInt(1) << 32n) | BigInt(ptr)
             } else if (typeof result === "object") {
               objects.push(result)
               return (BigInt(2) << 32n) | BigInt(objects.length - 1)

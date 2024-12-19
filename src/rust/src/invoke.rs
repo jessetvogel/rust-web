@@ -13,6 +13,10 @@ unsafe fn __invoke(_c_ptr: *const u8, _c_len: u32, _p_ptr: *const u8, _p_len: u3
     let bytes = unsafe { std::slice::from_raw_parts(_c_ptr, _c_len as usize) };
     let code = std::str::from_utf8(bytes).unwrap();
     if code == "function() { return Math.random() * Number.MAX_SAFE_INTEGER }" {
+
+        let _id = crate::allocations::create_allocation(1);
+        // TODO write in allocation
+
         let (r_type, r_value) = (1, 0); // number
         ((r_type as u64) << 32) | (r_value as u64)
     } else if code == "function(p0) { return document.createElement(p0) }" {
@@ -52,12 +56,12 @@ impl Deref for ObjectRef {
 pub enum JsValue {
     Undefined,
     Null,
+    Number(f64),
     BigInt(i64),
     Str(String),
     Bool(bool),
-    Number(f64),
-    Buffer(Vec<u8>),
     Ref(ObjectRef),
+    Buffer(Vec<u8>),
 }
 
 pub use JsValue::*;
@@ -69,19 +73,23 @@ impl JsValue {
         match self {
             Undefined => vec![0],
             Null => vec![1],
-            Buffer(b) => [vec![2], b.to_owned()].concat(),
+            Number(i) => [vec![2], i.to_le_bytes().to_vec()].concat(),
             BigInt(i) => [vec![3], i.to_le_bytes().to_vec()].concat(),
             Str(s) => [vec![4], (s.as_ptr() as u32).to_le_bytes().to_vec(), s.len().to_le_bytes().to_vec()].concat(),
             Bool(b) => vec![if *b { 5 } else { 6 }],
             Ref(i) => [vec![7], i.0.to_le_bytes().to_vec()].concat(),
-            Number(i) => [vec![8], i.to_le_bytes().to_vec()].concat(),
+            Buffer(b) => [vec![8], b.to_owned()].concat(),
         }
     }
 
     pub fn deserialize(r_type: u32, r_value: u32) -> Self {
         match r_type {
             0 => JsValue::Undefined,
-            1 => JsValue::Number(r_value as f64),
+            1 => {
+                let allocation_data = crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(r_value as usize));
+                let value = String::from_utf8_lossy(&allocation_data);
+                JsValue::Number(value.parse::<f64>().unwrap() as f64)
+            },
             2 => JsValue::Ref(ObjectRef(r_value)),
             3 => {
                 JsValue::Buffer(crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(r_value as usize)))
@@ -185,8 +193,8 @@ mod tests {
         // null
         assert_eq!(Null.serialize(), vec![1]);
 
-        // buffer
-        assert_eq!(Buffer(vec![1, 2, 3]).serialize(), [vec![2], vec![1, 2, 3]].concat());
+        // number
+        assert_eq!(Number(42.into()).serialize(), [vec![2], 42f64.to_le_bytes().to_vec()].concat());
 
         // bigint
         assert_eq!(BigInt(42).serialize(), [vec![3], 42u64.to_le_bytes().to_vec()].concat());
@@ -205,8 +213,8 @@ mod tests {
         // object ref
         assert_eq!(Ref(ObjectRef(42)).serialize(), [vec![7], 42u32.to_le_bytes().to_vec()].concat());
 
-        // number
-        assert_eq!(Number(42.into()).serialize(), [vec![8], 42f64.to_le_bytes().to_vec()].concat());
+        // buffer
+        assert_eq!(Buffer(vec![1, 2, 3]).serialize(), [vec![8], vec![1, 2, 3]].concat());
 
     }
 
