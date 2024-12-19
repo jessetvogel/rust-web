@@ -75,7 +75,7 @@ pub fn fetch(options: FetchOptions) -> impl Future<Output = FetchResponse> {
                 FetchResponse::Text(status, Js::invoke_new("return {}.responseText", &[Ref(r2)]).to_str().unwrap())
             }
             FetchResponseType::ArrayBuffer => {
-                FetchResponse::ArrayBuffer(status, Js::invoke_buffer("return {}.response", &[Ref(r2)]))
+                FetchResponse::ArrayBuffer(status, Js::invoke_new("return {}.response", &[Ref(r2)]).to_buffer().unwrap())
             }
         };
         RuntimeFuture::wake(future_id, result);

@@ -39,6 +39,7 @@ pub enum InvokeParam {
     Str(String),
     Bool(bool),
     Number(f64),
+    Buffer(Vec<u8>),
     Ref(ObjectRef),
 }
 
@@ -51,6 +52,7 @@ impl InvokeParam {
         match self {
             Undefined => vec![0],
             Null => vec![1],
+            Buffer(b) => [vec![2], b.to_owned()].concat(),
             BigInt(i) => [vec![3], i.to_le_bytes().to_vec()].concat(),
             Str(s) => [vec![4], (s.as_ptr() as u32).to_le_bytes().to_vec(), s.len().to_le_bytes().to_vec()].concat(),
             Bool(b) => vec![if *b { 5 } else { 6 }],
@@ -82,6 +84,12 @@ impl InvokeParam {
     pub fn to_ref(&self) -> Result<ObjectRef, String> {
         match &self {
             InvokeParam::Ref(s) => Ok(s.to_owned()),
+            _ => Err("Invalid type".to_string()),
+        }
+    }
+    pub fn to_buffer(&self) -> Result<Vec<u8>, String> {
+        match &self {
+            InvokeParam::Buffer(s) => Ok(s.to_owned()),
             _ => Err("Invalid type".to_string()),
         }
     }
@@ -122,7 +130,9 @@ impl Js {
                 let allocation_data = crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(result_value as usize));
                 InvokeParam::Str(String::from_utf8_lossy(&allocation_data).into())
             },
-            4 => todo!(), // buffer
+            4 => {
+                InvokeParam::Buffer(crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(result_value as usize)))
+            },
             5 => InvokeParam::Bool(if result_value == 1 { true } else { false }),
 
             _ => unreachable!(),
@@ -136,10 +146,6 @@ impl Js {
         let _result_type = (packed >> 32) as u32;
         let result_value = (packed & 0xFFFFFFFF) as u32;
         result_value
-    }
-    pub fn invoke_buffer(code: &str, params: &[InvokeParam]) -> Vec<u8> {
-        let allocation_id = Self::__invoke(code, params);
-        crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(allocation_id as usize))
     }
     pub fn deallocate(object_id: ObjectRef) {
         unsafe { __deallocate(*object_id as *const u8) };
