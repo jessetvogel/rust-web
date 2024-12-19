@@ -88,7 +88,7 @@ fn page1() -> El {
             });
         }))
         .child(El::new("button").text("page 2").classes(&BUTTON_CLASSES).on_event("click", move |_| {
-            ROUTER.with(|s| { s.borrow().navigate("page2"); });
+            ROUTER.with(|s| { s.borrow().navigate("/page2"); });
         }))
         .child(El::new("br"))
         .child(El::new("button").text("add").classes(&BUTTON_CLASSES).on_event("click", move |_| {
@@ -113,7 +113,7 @@ fn page2() -> El {
     El::new("div")
         .classes(&["m-2"])
         .child(El::new("button").text("page 1").classes(&BUTTON_CLASSES).on_event("click", move |_| {
-            ROUTER.with(|s| { s.borrow().navigate("page1"); });
+            ROUTER.with(|s| { s.borrow().navigate("/page1"); });
         }))
 }
 
@@ -124,8 +124,9 @@ pub fn main() {
 
     // get pages
     let pages = [
-        ("page1".to_owned(), Page { element: page1(), title: None }),
-        ("page2".to_owned(), Page { element: page2(), title: None })
+        ("/page1".to_owned(), Page { element: page1(), title: None }),
+        ("/page2".to_owned(), Page { element: page2(), title: None }),
+        ("/".to_owned(), Page { element: page1(), title: None })
     ];
 
     // load page
