@@ -130,7 +130,7 @@ pub fn main() {
 
     // load page
     let body = Js::invoke_ref("return document.querySelector({})", &[Str("body".into())]);
-    let pathname = Js::invoke_str("return window.location.pathname", &[]);
+    let pathname = Js::invoke_new("return window.location.pathname", &[]).to_str().unwrap();
     let (_, page) = pages.iter().find(|&(s, _)| *s == pathname).unwrap_or(&pages[0]);
     page.element.mount(&body);
 

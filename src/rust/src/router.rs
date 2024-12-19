@@ -17,7 +17,7 @@ impl Router {
     pub fn navigate(&self, route: &str) {
 
         // unmount page
-        let pathname = Js::invoke_str("return window.location.pathname", &[]);
+        let pathname = Js::invoke_new("return window.location.pathname", &[]).to_str().unwrap();
         let (_, current_page) = self.pages.iter().find(|&(s, _)| *s == pathname).unwrap();
         current_page.element.unmount();
 

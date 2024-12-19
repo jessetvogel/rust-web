@@ -72,7 +72,7 @@ pub fn fetch(options: FetchOptions) -> impl Future<Output = FetchResponse> {
         let status = Js::invoke_number("return {}.status", &[Ref(*r2)]) as u32;
         let result = match options.response_type {
             FetchResponseType::Text => {
-                FetchResponse::Text(status, Js::invoke_str("return {}.responseText", &[Ref(*r2)]))
+                FetchResponse::Text(status, Js::invoke_new("return {}.responseText", &[Ref(*r2)]).to_str().unwrap())
             }
             FetchResponseType::ArrayBuffer => {
                 FetchResponse::ArrayBuffer(status, Js::invoke_buffer("return {}.response", &[Ref(*r2)]))
