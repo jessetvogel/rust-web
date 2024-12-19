@@ -90,7 +90,8 @@ impl JsValue {
                 let allocation_data = crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(r_value as usize));
                 JsValue::Str(String::from_utf8_lossy(&allocation_data).into())
             },
-            5 => JsValue::Bool(if r_value == 1 { true } else { false }),
+            5 => JsValue::BigInt(r_value as i64),
+            6 => JsValue::Bool(if r_value == 1 { true } else { false }),
 
             _ => unreachable!(),
         }

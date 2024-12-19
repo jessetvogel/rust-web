@@ -77,6 +77,10 @@ const getWasmImports = () => {
             } else if (typeof result === "string") {
               const ptr = writeBufferToMemory(textEncoder.encode(result))
               return (BigInt(4) << 32n) | BigInt(ptr)
+            } else if (typeof result === "bigint") {
+              return (BigInt(5) << 32n) | BigInt(result)
+            } else if (typeof result === "boolean") {
+              return (BigInt(5) << 32n) | BigInt(result)
             }
         },
       __deallocate(object_id) {
