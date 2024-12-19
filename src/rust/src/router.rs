@@ -17,18 +17,18 @@ impl Router {
     pub fn navigate(&self, route: &str) {
 
         // unmount page
-        let pathname = Js::invoke_new("return window.location.pathname", &[]).to_str().unwrap();
+        let pathname = Js::invoke("return window.location.pathname", &[]).to_str().unwrap();
         let (_, current_page) = self.pages.iter().find(|&(s, _)| *s == pathname).unwrap();
         current_page.element.unmount();
 
         // push state
         let page = self.pages.get(route).unwrap();
         let page_str = page.title.to_owned().unwrap_or_default();
-        Js::invoke_new("window.history.pushState({ },{},{})", &[Str(page_str.into()), Str(route.into())]);
+        Js::invoke("window.history.pushState({ },{},{})", &[Str(page_str.into()), Str(route.into())]);
 
         // mount new page
         let body = self.root.as_ref().unwrap();
-        Js::invoke_new("{}.innerHTML = {}", &[Ref(*body), Str("".into())]);
+        Js::invoke("{}.innerHTML = {}", &[Ref(*body), Str("".into())]);
         page.element.mount(&body);
     }
 }

@@ -114,7 +114,7 @@ impl Js {
         }
         format!("function({}) {{ {} }}", params_names.join(","), code_params)
     }
-    pub fn invoke_new<'a>(code: &'a str, params: &[InvokeParam]) -> InvokeParam {
+    pub fn invoke<'a>(code: &'a str, params: &[InvokeParam]) -> InvokeParam {
         let code = Self::__code(code, params);
         let params = params.iter().flat_map(InvokeParam::serialize).collect::<Vec<_>>();
 
@@ -137,15 +137,6 @@ impl Js {
 
             _ => unreachable!(),
         }
-    }
-    fn __invoke(code: &str, params: &[InvokeParam]) -> u32 {
-        let code = Self::__code(code, params);
-        let params = params.iter().flat_map(InvokeParam::serialize).collect::<Vec<_>>();
-
-        let packed = unsafe { __invoke_and_return(code.as_ptr(), code.len() as u32, params.as_ptr(), params.len() as u32) };
-        let _result_type = (packed >> 32) as u32;
-        let result_value = (packed & 0xFFFFFFFF) as u32;
-        result_value
     }
     pub fn deallocate(object_id: ObjectRef) {
         unsafe { __deallocate(*object_id as *const u8) };

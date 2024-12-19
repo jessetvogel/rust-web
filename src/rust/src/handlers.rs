@@ -22,7 +22,7 @@ pub fn create_callback(mut handler: impl FnMut(ObjectRef) + 'static) -> ObjectRe
         const objectId = objects.length - 1;
         return objectId;
     "#;
-    let object_id = Js::invoke_new(code, &[]).to_num().unwrap();
+    let object_id = Js::invoke(code, &[]).to_num().unwrap();
     let function_ref = ObjectRef::new(object_id as u32);
     insert_callback(function_ref, move |value| { handler(value.unwrap()); });
     function_ref
@@ -36,14 +36,14 @@ pub fn create_empty_callback(mut handler: impl FnMut() + 'static) -> ObjectRef {
         const objectId = objects.length - 1;
         return objectId;
     "#;
-    let object_id = Js::invoke_new(code, &[]).to_num().unwrap();
+    let object_id = Js::invoke(code, &[]).to_num().unwrap();
     let function_ref = ObjectRef::new(object_id as u32);
     insert_callback(function_ref, move |_value| { handler(); });
     function_ref
 }
 
 pub fn create_future_callback(future_id: u32) -> ObjectRef {
-    Js::invoke_new("return () => { wasmModule.instance.exports.handle_callback({},-2); }", &[Number(future_id as f64)]).to_ref().unwrap()
+    Js::invoke("return () => { wasmModule.instance.exports.handle_callback({},-2); }", &[Number(future_id as f64)]).to_ref().unwrap()
 }
 
 pub fn insert_callback(function_ref: ObjectRef, cb: impl FnMut(Option<ObjectRef>) + 'static) {

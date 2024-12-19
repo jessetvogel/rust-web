@@ -42,7 +42,7 @@ impl<T> Future for RuntimeFuture<T> {
 impl <T: 'static> RuntimeFuture<T> {
     pub fn new() -> Self {
 
-        let future_id = Js::invoke_new("return Math.random() * Number.MAX_SAFE_INTEGER", &[]).to_num().unwrap();
+        let future_id = Js::invoke("return Math.random() * Number.MAX_SAFE_INTEGER", &[]).to_num().unwrap();
         let state = RuntimeState { completed: false, waker: None, result: None, };
         let state_arc = Arc::new(Mutex::new(state));
         STATE_MAP.with_borrow_mut(|s| {
@@ -88,7 +88,7 @@ impl<T: 'static> Runtime<T> {
         fn wake_fn<T: 'static>(ptr: *const ()) {
             let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };
             let function_ref = create_empty_callback(move || { Runtime::poll(&_task); });
-            Js::invoke_new("window.setTimeout({},0)", &[Ref(function_ref)]);
+            Js::invoke("window.setTimeout({},0)", &[Ref(function_ref)]);
         }
         fn drop_fn<T>(ptr: *const ()) {
             let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };
