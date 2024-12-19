@@ -144,7 +144,7 @@ mod tests {
         assert_eq!(Ref(&ObjectRef(42)).serialize(), [vec![7], 42u32.to_le_bytes().to_vec()].concat());
 
         // uint
-        assert_eq!(Number(42.into()).serialize(), [vec![8], 42u32.to_le_bytes().to_vec()].concat());
+        assert_eq!(Number(42.into()).serialize(), [vec![8], 42f64.to_le_bytes().to_vec()].concat());
 
     }
 
