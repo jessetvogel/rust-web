@@ -131,9 +131,6 @@ impl Js {
         let result_value = (packed & 0xFFFFFFFF) as u32;
         result_value
     }
-    pub fn invoke(code: &str, params: &[InvokeParam]) {
-        Self::__invoke(code, params);
-    }
     pub fn invoke_ref(code: &str, params: &[InvokeParam]) -> ObjectRef {
         let object_ref = Self::__invoke(code, params);
         ObjectRef(object_ref)

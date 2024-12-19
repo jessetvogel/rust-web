@@ -24,11 +24,11 @@ impl Router {
         // push state
         let page = self.pages.get(route).unwrap();
         let page_str = page.title.to_owned().unwrap_or_default();
-        Js::invoke("window.history.pushState({ },{},{})", &[Str(page_str.into()), Str(route.into())]);
+        Js::invoke_new("window.history.pushState({ },{},{})", &[Str(page_str.into()), Str(route.into())]);
 
         // mount new page
         let body = self.root.as_ref().unwrap();
-        Js::invoke("{}.innerHTML = {}", &[Ref(*body), Str("".into())]);
+        Js::invoke_new("{}.innerHTML = {}", &[Ref(*body), Str("".into())]);
         page.element.mount(&body);
     }
 }

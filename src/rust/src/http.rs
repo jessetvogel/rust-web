@@ -54,13 +54,13 @@ pub fn fetch(options: FetchOptions) -> impl Future<Output = FetchResponse> {
 
     // send request
     let request = Rc::new(Js::invoke_ref("return new XMLHttpRequest()", &[]));
-    Js::invoke("{}.open({},{})", &[Ref(*request), Str(options.method.to_string()), Str(options.url.to_owned())]);
-    options.headers.iter().for_each(|(k, v)| { Js::invoke("{}.setRequestHeader({},{})", &[Ref(*request), Str(k.into()), Str(v.into())]); });
-    Js::invoke("{}.responseType = {}", &[Ref(*request), Str(options.response_type.to_string())]);
+    Js::invoke_new("{}.open({},{})", &[Ref(*request), Str(options.method.to_string()), Str(options.url.to_owned())]);
+    options.headers.iter().for_each(|(k, v)| { Js::invoke_new("{}.setRequestHeader({},{})", &[Ref(*request), Str(k.into()), Str(v.into())]); });
+    Js::invoke_new("{}.responseType = {}", &[Ref(*request), Str(options.response_type.to_string())]);
     if let Some(body) = options.body {
-        Js::invoke("{}.send({})", &[Ref(*request), Str(body.into())]);
+        Js::invoke_new("{}.send({})", &[Ref(*request), Str(body.into())]);
     } else {
-        Js::invoke("{}.send()", &[Ref(*request)]);
+        Js::invoke_new("{}.send()", &[Ref(*request)]);
     }
 
     // handle response
@@ -80,7 +80,7 @@ pub fn fetch(options: FetchOptions) -> impl Future<Output = FetchResponse> {
         };
         RuntimeFuture::wake(future_id, result);
     });
-    Js::invoke("{}.onload = {}", &[Ref(*request), Ref(function_ref)]);
+    Js::invoke_new("{}.onload = {}", &[Ref(*request), Ref(function_ref)]);
 
     return future;
 }

@@ -34,7 +34,7 @@ async fn fetch_json(method: HttpMethod, url: String, body: Option<JsonValue>) ->
 pub fn sleep(ms: impl Into<f64>) -> impl Future<Output = ()> {
     let future = RuntimeFuture::new();
     let callback_ref = create_future_callback(future.id());
-    Js::invoke("window.setTimeout({},{})", &[Ref(callback_ref), Number(ms.into())]);
+    Js::invoke_new("window.setTimeout({},{})", &[Ref(callback_ref), Number(ms.into())]);
     future
 }
 
@@ -84,7 +84,7 @@ fn page1() -> El {
                 let url = format!("https://pokeapi.co/api/v2/pokemon/{}", 1);
                 let result = fetch_json(HttpMethod::GET, url, None).await;
                 let name = result["name"].as_str().unwrap();
-                Js::invoke("alert({})", &[Str(name.into())]);
+                Js::invoke_new("alert({})", &[Str(name.into())]);
             });
         }))
         .child(El::new("button").text("page 2").classes(&BUTTON_CLASSES).on_event("click", move |_| {
@@ -97,15 +97,15 @@ fn page1() -> El {
         }))
         .child(El::new("div").text("0").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.to_string())]); });
+            signal_count.on(move |v| { Js::invoke_new("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.to_string())]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.into())]); });
+            signal_time.on(move |v| { Js::invoke_new("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.into())]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.into())]); });
+            signal_key.on(move |v| { Js::invoke_new("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.into())]); });
         }))
 }
 
@@ -120,7 +120,7 @@ fn page2() -> El {
 #[no_mangle]
 pub fn main() {
 
-    std::panic::set_hook(Box::new(|e| { Js::invoke("console.log({})", &[Str(e.to_string())]); }));
+    std::panic::set_hook(Box::new(|e| { Js::invoke_new("console.log({})", &[Str(e.to_string())]); }));
 
     // get pages
     let pages = [
