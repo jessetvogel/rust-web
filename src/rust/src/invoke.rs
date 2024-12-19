@@ -32,7 +32,7 @@ impl Deref for ObjectRef {
 // NOTE: Numbers in Javascript are represented by 64-bits floats
 // https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-ecmascript-language-types-number-type
 #[derive(Debug)]
-pub enum InvokeParam {
+pub enum JsValue {
     Undefined,
     Null,
     BigInt(i64),
@@ -43,9 +43,9 @@ pub enum InvokeParam {
     Ref(ObjectRef),
 }
 
-pub use InvokeParam::*;
+pub use JsValue::*;
 
-impl InvokeParam {
+impl JsValue {
 
     // layout: type (1 byte) - data (var length)
     pub fn serialize(&self) -> Vec<u8> {
@@ -61,35 +61,53 @@ impl InvokeParam {
         }
     }
 
+    pub fn deserialize(r_type: u32, r_value: u32) -> Self {
+        match r_type {
+            0 => JsValue::Undefined,
+            1 => JsValue::Number(r_value as f64),
+            2 => JsValue::Ref(ObjectRef(r_value)),
+            3 => {
+                let allocation_data = crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(r_value as usize));
+                JsValue::Str(String::from_utf8_lossy(&allocation_data).into())
+            },
+            4 => {
+                JsValue::Buffer(crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(r_value as usize)))
+            },
+            5 => JsValue::Bool(if r_value == 1 { true } else { false }),
+
+            _ => unreachable!(),
+        }
+    }
+
     pub fn to_bool(&self) -> Result<bool, String> {
         match &self {
-            InvokeParam::Bool(b) => Ok(b.to_owned()),
+            JsValue::Bool(b) => Ok(b.to_owned()),
             _ => Err("Invalid type".to_string()),
         }
     }
 
     pub fn to_str(&self) -> Result<String, String> {
         match &self {
-            InvokeParam::Str(s) => Ok(s.to_string()),
+            JsValue::Str(s) => Ok(s.to_string()),
             _ => Err("Invalid type".to_string()),
         }
     }
 
     pub fn to_num(&self) -> Result<f64, String> {
         match &self {
-            InvokeParam::Number(s) => Ok(s.to_owned()),
+            JsValue::Number(s) => Ok(s.to_owned()),
             _ => Err("Invalid type".to_string()),
         }
     }
     pub fn to_ref(&self) -> Result<ObjectRef, String> {
         match &self {
-            InvokeParam::Ref(s) => Ok(s.to_owned()),
+            JsValue::Ref(s) => Ok(s.to_owned()),
             _ => Err("Invalid type".to_string()),
         }
     }
     pub fn to_buffer(&self) -> Result<Vec<u8>, String> {
         match &self {
-            InvokeParam::Buffer(s) => Ok(s.to_owned()),
+            JsValue::Buffer(s) => Ok(s.to_owned()),
             _ => Err("Invalid type".to_string()),
         }
     }
@@ -102,7 +120,7 @@ pub enum ReturnParam { Void = 0, Number = 1, Ref = 2, Str = 3, Buffer = 4 }
 pub struct Js {}
 
 impl Js {
-    fn __code(code: &str, params: &[InvokeParam]) -> String {
+    fn __code(code: &str, params: &[JsValue]) -> String {
 
         let mut code_params = String::from(code);
 
@@ -114,29 +132,13 @@ impl Js {
         }
         format!("function({}) {{ {} }}", params_names.join(","), code_params)
     }
-    pub fn invoke<'a>(code: &'a str, params: &[InvokeParam]) -> InvokeParam {
+    pub fn invoke<'a>(code: &'a str, params: &[JsValue]) -> JsValue {
         let code = Self::__code(code, params);
-        let params = params.iter().flat_map(InvokeParam::serialize).collect::<Vec<_>>();
-
-        let packed = unsafe { __invoke(code.as_ptr(), code.len() as u32, params.as_ptr(), params.len() as u32) };
-        let result_type = (packed >> 32) as u32;
-        let result_value = (packed & 0xFFFFFFFF) as u32;
-
-        match result_type {
-            0 => InvokeParam::Undefined,
-            1 => InvokeParam::Number(result_value as f64),
-            2 => InvokeParam::Ref(ObjectRef(result_value)),
-            3 => {
-                let allocation_data = crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(result_value as usize));
-                InvokeParam::Str(String::from_utf8_lossy(&allocation_data).into())
-            },
-            4 => {
-                InvokeParam::Buffer(crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(result_value as usize)))
-            },
-            5 => InvokeParam::Bool(if result_value == 1 { true } else { false }),
-
-            _ => unreachable!(),
-        }
+        let params = params.iter().flat_map(JsValue::serialize).collect::<Vec<_>>();
+        let r_packed = unsafe { __invoke(code.as_ptr(), code.len() as u32, params.as_ptr(), params.len() as u32) };
+        let r_type = (r_packed >> 32) as u32;
+        let r_value = (r_packed & 0xFFFFFFFF) as u32;
+        JsValue::deserialize(r_type, r_value)
     }
     pub fn deallocate(object_id: ObjectRef) {
         unsafe { __deallocate(*object_id as *const u8) };

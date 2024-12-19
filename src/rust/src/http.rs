@@ -3,7 +3,7 @@ use crate::handlers::create_empty_callback;
 use crate::runtime::RuntimeFuture;
 use crate::invoke::Js;
 
-use crate::invoke::InvokeParam::*;
+use crate::invoke::JsValue::*;
 
 use std::collections::HashMap;
 use std::future::Future;

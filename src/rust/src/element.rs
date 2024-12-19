@@ -4,7 +4,7 @@ use std::ops::Deref;
 
 use crate::invoke::{Js, ObjectRef};
 
-use crate::invoke::InvokeParam::*;
+use crate::invoke::JsValue::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct El { element: ObjectRef, callbacks: RefCell<Vec<ObjectRef>> }

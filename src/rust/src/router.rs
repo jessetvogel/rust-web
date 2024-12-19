@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use crate::invoke::{Js, ObjectRef};
 use crate::element::El;
 
-use crate::invoke::InvokeParam::*;
+use crate::invoke::JsValue::*;
 
 #[derive(Debug)]
 pub struct Page { pub element: El, pub title: Option<String> }

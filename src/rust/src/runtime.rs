@@ -12,7 +12,7 @@ use std::{
 use crate::handlers::create_empty_callback;
 use crate::invoke::Js;
 
-use crate::invoke::InvokeParam::*;
+use crate::invoke::JsValue::*;
 
 thread_local! {
     static STATE_MAP: RefCell<HashMap<u32, Box<dyn Any>>> = Default::default(); // Cast: Arc<Mutex<RuntimeState<T>>>

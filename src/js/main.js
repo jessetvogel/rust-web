@@ -61,7 +61,7 @@ const runFunction = (c_ptr, c_len, p_ptr, p_len) => {
 const getWasmImports = () => {
 
     const env = {
-        __invoke_and_return (c_ptr, c_len, p_ptr, p_len, r_type) {
+        __invoke (c_ptr, c_len, p_ptr, p_len, r_type) {
             // invoke function
             const result = runFunction(c_ptr, c_len, p_ptr, p_len)
             if (r_type !== 0 && (result === undefined || result === null)) throw new Error('Invalid return')

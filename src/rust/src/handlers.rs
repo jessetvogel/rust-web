@@ -2,7 +2,7 @@
 use crate::runtime::RuntimeFuture;
 use crate::invoke::{Js, ObjectRef};
 
-use crate::invoke::InvokeParam::*;
+use crate::invoke::JsValue::*;
 
 use std::collections::HashMap;
 use std::sync::Mutex;
