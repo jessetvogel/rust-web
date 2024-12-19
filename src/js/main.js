@@ -66,18 +66,25 @@ const getWasmImports = () => {
             const result = runFunction(c_ptr, c_len, p_ptr, p_len)
             if (r_type !== 0 && (result === undefined || result === null)) throw new Error('Invalid return')
 
-            // return result
-            if (r_type === 0) {
-              return result
-            }  else if (r_type === 1) {
-              return result
-            } else if (r_type === 2) {
+            // typeof result === "string"
+            // typeof result === "boolean"
+            // typeof result === "number"
+            // typeof result === "object"
+            // typeof result === "undefined"
+
+
+
+            if (typeof result === "undefined") {
+              return (BigInt(0) << 32n) | BigInt(result)
+            }  else if (typeof result === "number") {
+              return (BigInt(1) << 32n) | BigInt(result)
+            } else if (typeof result === "object") {
               objects.push(result)
-              return objects.length - 1
-            } else if (r_type === 3) {
-              return writeBufferToMemory(textEncoder.encode(result))
-            } else if (r_type === 4) {
-              return writeBufferToMemory(new Uint8Array(result))
+              return (BigInt(2) << 32n) | BigInt(objects.length - 1)
+            } else if (typeof result === "object" && result instanceof Uint8Array) {
+              return (BigInt(4) << 32n) | BigInt(writeBufferToMemory(new Uint8Array(result)))
+            } else if (typeof result === "string") {
+              return (BigInt(3) << 32n) | BigInt(writeBufferToMemory(textEncoder.encode(result)))
             }
         },
       __deallocate(object_id) {

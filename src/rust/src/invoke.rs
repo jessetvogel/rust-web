@@ -3,12 +3,12 @@ use std::ops::Deref;
 
 #[cfg(not(test))]
 extern "C" {
-    fn __invoke_and_return(c_ptr: *const u8, c_len: u32, p_ptr: *const u8, p_len: u32, r_type: u8) -> u32;
+    fn __invoke_and_return(c_ptr: *const u8, c_len: u32, p_ptr: *const u8, p_len: u32) -> u64;
     fn __deallocate(object_id: *const u8);
 }
 
 #[cfg(test)]
-unsafe fn __invoke_and_return(_c_ptr: *const u8, _c_len: u32, _p_ptr: *const u8, _p_len: u32, _r_type: u8) -> u32 { 0 }
+unsafe fn __invoke_and_return(_c_ptr: *const u8, _c_len: u32, _p_ptr: *const u8, _p_len: u32) -> u64 { 0 }
 #[cfg(test)]
 unsafe fn __deallocate(_object_id: *const u8) {}
 
@@ -79,28 +79,32 @@ impl Js {
         }
         format!("function({}) {{ {} }}", params_names.join(","), code_params)
     }
-    fn __invoke(code: &str, params: &[InvokeParam], r_type: ReturnParam) -> u32 {
+    fn __invoke(code: &str, params: &[InvokeParam]) -> u32 {
         let code = Self::__code(code, params);
         let params = params.iter().flat_map(InvokeParam::serialize).collect::<Vec<_>>();
-        unsafe { __invoke_and_return(code.as_ptr(), code.len() as u32, params.as_ptr(), params.len() as u32, r_type as u8) }
+
+        let packed = unsafe { __invoke_and_return(code.as_ptr(), code.len() as u32, params.as_ptr(), params.len() as u32) };
+        let _result_type = (packed >> 32) as u32;
+        let result_value = (packed & 0xFFFFFFFF) as u32;
+        result_value
     }
     pub fn invoke(code: &str, params: &[InvokeParam]) {
-        Self::__invoke(code, params, ReturnParam::Void);
+        Self::__invoke(code, params);
     }
     pub fn invoke_str(code: &str, params: &[InvokeParam]) -> String {
-        let allocation_id = Self::__invoke(code, params, ReturnParam::Str);
+        let allocation_id = Self::__invoke(code, params);
         let allocation_data = crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(allocation_id as usize));
         String::from_utf8(allocation_data).unwrap()
     }
     pub fn invoke_number(code: &str, params: &[InvokeParam]) -> u32 {
-        Self::__invoke(code, params, ReturnParam::Number)
+        Self::__invoke(code, params)
     }
     pub fn invoke_ref(code: &str, params: &[InvokeParam]) -> ObjectRef {
-        let object_ref = Self::__invoke(code, params, ReturnParam::Ref);
+        let object_ref = Self::__invoke(code, params);
         ObjectRef(object_ref)
     }
     pub fn invoke_buffer(code: &str, params: &[InvokeParam]) -> Vec<u8> {
-        let allocation_id = Self::__invoke(code, params, ReturnParam::Buffer);
+        let allocation_id = Self::__invoke(code, params);
         crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(allocation_id as usize))
     }
     pub fn deallocate(object_id: ObjectRef) {
