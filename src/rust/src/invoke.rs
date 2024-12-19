@@ -14,8 +14,7 @@ unsafe fn __invoke(_c_ptr: *const u8, _c_len: u32, _p_ptr: *const u8, _p_len: u3
     let code = std::str::from_utf8(bytes).unwrap();
     if code == "function() { return Math.random() * Number.MAX_SAFE_INTEGER }" {
 
-        let _id = crate::allocations::create_allocation(1);
-        // TODO write in allocation
+        crate::allocations::ALLOCATIONS.with_borrow_mut(|s| { s.push(b"0".to_vec()); });
 
         let (r_type, r_value) = (1, 0); // number
         ((r_type as u64) << 32) | (r_value as u64)
