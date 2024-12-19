@@ -129,6 +129,13 @@ impl JsValue {
             _ => Err("Invalid type".to_string()),
         }
     }
+
+    pub fn to_bigint(&self) -> Result<i64, String> {
+        match &self {
+            JsValue::BigInt(s) => Ok(s.to_owned()),
+            _ => Err("Invalid type".to_string()),
+        }
+    }
 }
 
 
