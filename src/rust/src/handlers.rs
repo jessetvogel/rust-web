@@ -43,7 +43,7 @@ pub fn create_empty_callback(mut handler: impl FnMut() + 'static) -> ObjectRef {
 }
 
 pub fn create_future_callback(future_id: u32) -> ObjectRef {
-    Js::invoke_ref("return () => { wasmModule.instance.exports.handle_callback({},-2); }", &[Number(future_id as f64)])
+    Js::invoke_new("return () => { wasmModule.instance.exports.handle_callback({},-2); }", &[Number(future_id as f64)]).to_ref().unwrap()
 }
 
 pub fn insert_callback(function_ref: ObjectRef, cb: impl FnMut(Option<ObjectRef>) + 'static) {

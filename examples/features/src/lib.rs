@@ -56,7 +56,7 @@ fn page1() -> El {
         .on_mount(move |_| {
 
             // add listener
-            let body = Js::invoke_ref("return document.querySelector({})", &[Str("body".into())]);
+            let body = Js::invoke_new("return document.querySelector({})", &[Str("body".into())]).to_ref().unwrap();
             let signal_key_clone = signal_key_clone.clone();
 
             El::from(&body).on_event("keydown", move |e| {
@@ -129,7 +129,7 @@ pub fn main() {
     ];
 
     // load page
-    let body = Js::invoke_ref("return document.querySelector({})", &[Str("body".into())]);
+    let body = Js::invoke_new("return document.querySelector({})", &[Str("body".into())]).to_ref().unwrap();
     let pathname = Js::invoke_new("return window.location.pathname", &[]).to_str().unwrap();
     let (_, page) = pages.iter().find(|&(s, _)| *s == pathname).unwrap_or(&pages[0]);
     page.element.mount(&body);

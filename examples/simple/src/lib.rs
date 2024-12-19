@@ -15,14 +15,14 @@ pub fn main() {
 
     std::panic::set_hook(Box::new(|e| { Js::invoke_new("console.log({})", &[Str(e.to_string())]); }));
 
-    let button = Js::invoke_ref("return document.createElement({})", &[Str("button".into())]);
-    let button_text = Js::invoke_ref("return document.createTextNode({})", &[Str("Click".into())]);
+    let button = Js::invoke_new("return document.createElement({})", &[Str("button".into())]).to_ref().unwrap();
+    let button_text = Js::invoke_new("return document.createTextNode({})", &[Str("Click".into())]).to_ref().unwrap();
     Js::invoke_new("{}.appendChild({})", &[Ref(button), Ref(button_text)]);
     add_click_event_listener(&button, move |_s| {
-        let button = Js::invoke_ref("return document.createElement({})", &[Str("button".into())]);
+        let button = Js::invoke_new("return document.createElement({})", &[Str("button".into())]).to_ref().unwrap();
         add_click_event_listener(&button, |_s| {});
     });
 
-    let body = Js::invoke_ref("return document.querySelector({})", &[Str("body".into())]);
+    let body = Js::invoke_new("return document.querySelector({})", &[Str("body".into())]).to_ref().unwrap();
     Js::invoke_new("{}.appendChild({})", &[Ref(body), Ref(button)]);
 }

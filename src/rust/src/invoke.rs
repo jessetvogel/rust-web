@@ -79,6 +79,12 @@ impl InvokeParam {
             _ => Err("Invalid type".to_string()),
         }
     }
+    pub fn to_ref(&self) -> Result<ObjectRef, String> {
+        match &self {
+            InvokeParam::Ref(s) => Ok(s.to_owned()),
+            _ => Err("Invalid type".to_string()),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -130,10 +136,6 @@ impl Js {
         let _result_type = (packed >> 32) as u32;
         let result_value = (packed & 0xFFFFFFFF) as u32;
         result_value
-    }
-    pub fn invoke_ref(code: &str, params: &[InvokeParam]) -> ObjectRef {
-        let object_ref = Self::__invoke(code, params);
-        ObjectRef(object_ref)
     }
     pub fn invoke_buffer(code: &str, params: &[InvokeParam]) -> Vec<u8> {
         let allocation_id = Self::__invoke(code, params);
