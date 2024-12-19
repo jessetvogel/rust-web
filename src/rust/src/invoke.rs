@@ -67,11 +67,11 @@ impl JsValue {
             1 => JsValue::Number(r_value as f64),
             2 => JsValue::Ref(ObjectRef(r_value)),
             3 => {
-                let allocation_data = crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(r_value as usize));
-                JsValue::Str(String::from_utf8_lossy(&allocation_data).into())
+                JsValue::Buffer(crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(r_value as usize)))
             },
             4 => {
-                JsValue::Buffer(crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(r_value as usize)))
+                let allocation_data = crate::allocations::ALLOCATIONS.with_borrow_mut(|s| s.remove(r_value as usize));
+                JsValue::Str(String::from_utf8_lossy(&allocation_data).into())
             },
             5 => JsValue::Bool(if r_value == 1 { true } else { false }),
 
@@ -112,9 +112,6 @@ impl JsValue {
         }
     }
 }
-
-#[derive(Debug)]
-pub enum ReturnParam { Void = 0, Number = 1, Ref = 2, Str = 3, Buffer = 4 }
 
 
 pub struct Js {}
@@ -163,6 +160,9 @@ mod tests {
         // null
         assert_eq!(Null.serialize(), vec![1]);
 
+        // buffer
+        assert_eq!(Buffer(vec![1, 2, 3]).serialize(), [vec![2], vec![1, 2, 3]].concat());
+
         // bigint
         assert_eq!(BigInt(42).serialize(), [vec![3], 42u64.to_le_bytes().to_vec()].concat());
 
@@ -180,7 +180,7 @@ mod tests {
         // object ref
         assert_eq!(Ref(ObjectRef(42)).serialize(), [vec![7], 42u32.to_le_bytes().to_vec()].concat());
 
-        // uint
+        // number
         assert_eq!(Number(42.into()).serialize(), [vec![8], 42f64.to_le_bytes().to_vec()].concat());
 
     }

@@ -74,9 +74,9 @@ const getWasmImports = () => {
               objects.push(result)
               return (BigInt(2) << 32n) | BigInt(objects.length - 1)
             } else if (typeof result === "object" && result instanceof Uint8Array) {
-              return (BigInt(4) << 32n) | BigInt(writeBufferToMemory(new Uint8Array(result)))
+              return (BigInt(3) << 32n) | BigInt(writeBufferToMemory(new Uint8Array(result)))
             } else if (typeof result === "string") {
-              return (BigInt(3) << 32n) | BigInt(writeBufferToMemory(textEncoder.encode(result)))
+              return (BigInt(4) << 32n) | BigInt(writeBufferToMemory(textEncoder.encode(result)))
             }
         },
       __deallocate(object_id) {
