@@ -60,7 +60,7 @@ fn page1() -> El {
             let signal_key_clone = signal_key_clone.clone();
 
             El::from(&body).on_event("keydown", move |e| {
-                let key_code = Js::invoke_number("return {}[{}]", &[Ref(e), Str("key_code".into())]);
+                let key_code = Js::invoke_new("return {}[{}]", &[Ref(e), Str("key_code".into())]).to_num().unwrap();
                 let key_name = keycodes::KEYBOARD_MAP[key_code as usize];
                 let text = format!("Pressed: {}", key_name);
                 signal_key_clone.set(text);

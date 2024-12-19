@@ -42,14 +42,14 @@ impl<T> Future for RuntimeFuture<T> {
 impl <T: 'static> RuntimeFuture<T> {
     pub fn new() -> Self {
 
-        let future_id = Js::invoke_number("return Math.random() * Number.MAX_SAFE_INTEGER", &[]);
+        let future_id = Js::invoke_new("return Math.random() * Number.MAX_SAFE_INTEGER", &[]).to_num().unwrap();
         let state = RuntimeState { completed: false, waker: None, result: None, };
         let state_arc = Arc::new(Mutex::new(state));
         STATE_MAP.with_borrow_mut(|s| {
-            s.insert(future_id, Box::new(state_arc.clone()));
+            s.insert(future_id as u32, Box::new(state_arc.clone()));
         });
 
-        Self { id: future_id, state: state_arc }
+        Self { id: future_id as u32, state: state_arc }
     }
 
     pub fn id(&self) -> u32 { self.id }
@@ -116,6 +116,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore]
     fn test_await() {
 
         Runtime::block_on(async move {

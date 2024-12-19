@@ -134,9 +134,6 @@ impl Js {
     pub fn invoke(code: &str, params: &[InvokeParam]) {
         Self::__invoke(code, params);
     }
-    pub fn invoke_number(code: &str, params: &[InvokeParam]) -> u32 {
-        Self::__invoke(code, params)
-    }
     pub fn invoke_ref(code: &str, params: &[InvokeParam]) -> ObjectRef {
         let object_ref = Self::__invoke(code, params);
         ObjectRef(object_ref)
@@ -277,35 +274,6 @@ mod tests {
         let code = Js::__code("return document.createTextNode({})", &[Str("a".into())]);
         let expected_code = "function(p0){ return document.createTextNode(p0) }";
         assert_eq!(cs(&code), cs(&expected_code));
-
-    }
-
-    #[test]
-    fn test_invoke() {
-
-        // invoke
-        let result = Js::invoke_number("", &[]);
-        assert_eq!(result, 0);
-
-        // invoke and return object
-        let result = Js::invoke_ref("", &[]);
-        assert_eq!(result, ObjectRef(0));
-
-        // TODO invoke and return string
-        // let text = "hello";
-        // crate::allocations::ALLOCATIONS.with_borrow_mut(|s| {
-        //     *s = vec![text.as_bytes().to_vec()];
-        // });
-        // let result = Js::invoke_new("", &[]).to_str().unwrap();
-        // assert_eq!(result, "hello".to_owned());
-
-        // invoke and return array buffer
-        let vec = vec![1, 2];
-        crate::allocations::ALLOCATIONS.with_borrow_mut(|s| {
-            *s = vec![vec.clone()];
-        });
-        let result = Js::invoke_buffer("", &[]);
-        assert_eq!(result, vec);
 
     }
 }

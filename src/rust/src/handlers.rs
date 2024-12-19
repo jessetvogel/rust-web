@@ -22,7 +22,7 @@ pub fn create_callback(mut handler: impl FnMut(ObjectRef) + 'static) -> ObjectRe
         const objectId = objects.length - 1;
         return objectId;
     "#;
-    let object_id = Js::invoke_number(code, &[]);
+    let object_id = Js::invoke_new(code, &[]).to_num().unwrap();
     let function_ref = ObjectRef::new(object_id as u32);
     insert_callback(function_ref, move |value| { handler(value.unwrap()); });
     function_ref
@@ -36,7 +36,7 @@ pub fn create_empty_callback(mut handler: impl FnMut() + 'static) -> ObjectRef {
         const objectId = objects.length - 1;
         return objectId;
     "#;
-    let object_id = Js::invoke_number(code, &[]);
+    let object_id = Js::invoke_new(code, &[]).to_num().unwrap();
     let function_ref = ObjectRef::new(object_id as u32);
     insert_callback(function_ref, move |_value| { handler(); });
     function_ref
