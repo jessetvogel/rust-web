@@ -19,14 +19,14 @@ impl Deref for El {
 
 impl El {
     pub fn new(tag: &str) -> Self {
-        let el = Js::invoke_ref("return document.createElement({})", &[Str(tag)]);
+        let el = Js::invoke_ref("return document.createElement({})", &[Str(tag.into())]);
         Self { element: el, callbacks: RefCell::new(vec![]) }
     }
     pub fn from(el: &ObjectRef) -> Self {
         Self { element: el.to_owned(), callbacks: RefCell::new(vec![]) }
     }
     pub fn mount(&self, parent: &ObjectRef) {
-        Js::invoke("{}.appendChild({})", &[Ref(&parent), Ref(&self)]);
+        Js::invoke("{}.appendChild({})", &[Ref(*parent), Ref(self.element)]);
     }
     pub fn unmount(&self) {
         let mut c = self.callbacks.borrow_mut();
@@ -38,27 +38,27 @@ impl El {
         c.clear();
     }
     pub fn attr(self, name: &str, value: &str) -> Self {
-        Js::invoke("{}.setAttribute({},{})", &[Ref(&self), Str(name), Str(value)]);
+        Js::invoke("{}.setAttribute({},{})", &[Ref(*self), Str(name.into()), Str(value.into())]);
         self
     }
     pub fn attr_fn(self, name: &str, value: &str, cb: impl Fn() -> bool + 'static) -> Self {
         if cb() {
-            Js::invoke("{}.setAttribute({},{})", &[Ref(&self), Str(name), Str(value)]);
+            Js::invoke("{}.setAttribute({},{})", &[Ref(*self), Str(name.into()), Str(value.into())]);
         }
         self
     }
     pub fn classes(self, classes: &[&str]) -> Self {
-        classes.iter().for_each(|c| { Js::invoke("{}.classList.add({})", &[Ref(&self), Str(c)]); });
+        classes.iter().for_each(|&c| { Js::invoke("{}.classList.add({})", &[Ref(*self), Str(c.into())]); });
         self
     }
     pub fn child(self, child: Self) -> Self {
-        Js::invoke("{}.appendChild({})", &[Ref(&self), Ref(&child)]);
+        Js::invoke("{}.appendChild({})", &[Ref(*self), Ref(*child)]);
         self
     }
     pub fn children(self, children: &[Self]) -> Self {
-        Js::invoke("{}.innerHTML = {}", &[Ref(&self), Str("")]);
+        Js::invoke("{}.innerHTML = {}", &[Ref(*self), Str("".into())]);
         for child in children {
-            Js::invoke("{}.appendChild({})", &[Ref(&self), Ref(&child)]);
+            Js::invoke("{}.appendChild({})", &[Ref(*self), Ref(child.element)]);
         }
         self
     }
@@ -70,7 +70,7 @@ impl El {
 
         let function_ref = crate::handlers::create_callback(cb);
         let code = &format!("{{}}.addEventListener('{}',{{}})", event);
-        Js::invoke(code, &[Ref(&self), Ref(&function_ref)]);
+        Js::invoke(code, &[Ref(*self), Ref(function_ref)]);
 
         self.callbacks.borrow_mut().push(function_ref);
 
@@ -78,8 +78,8 @@ impl El {
     }
     pub fn text(self, text: &str) -> Self {
 
-        let el = Js::invoke_ref("return document.createTextNode({})", &[Str(text)]);
-        Js::invoke("{}.appendChild({})", &[Ref(&self), Ref(&el)]);
+        let el = Js::invoke_ref("return document.createTextNode({})", &[Str(text.into())]);
+        Js::invoke("{}.appendChild({})", &[Ref(*self), Ref(el)]);
 
         self
     }

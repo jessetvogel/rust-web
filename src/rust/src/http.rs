@@ -54,13 +54,13 @@ pub fn fetch(options: FetchOptions) -> impl Future<Output = FetchResponse> {
 
     // send request
     let request = Rc::new(Js::invoke_ref("return new XMLHttpRequest()", &[]));
-    Js::invoke("{}.open({},{})", &[Ref(&request), Str(&options.method.to_string()), Str(&options.url)]);
-    options.headers.iter().for_each(|(k, v)| { Js::invoke("{}.setRequestHeader({},{})", &[Ref(&request), Str(k), Str(v)]); });
-    Js::invoke("{}.responseType = {}", &[Ref(&request), Str(&options.response_type.to_string())]);
+    Js::invoke("{}.open({},{})", &[Ref(*request), Str(options.method.to_string()), Str(options.url.to_owned())]);
+    options.headers.iter().for_each(|(k, v)| { Js::invoke("{}.setRequestHeader({},{})", &[Ref(*request), Str(k.into()), Str(v.into())]); });
+    Js::invoke("{}.responseType = {}", &[Ref(*request), Str(options.response_type.to_string())]);
     if let Some(body) = options.body {
-        Js::invoke("{}.send({})", &[Ref(&request), Str(body)]);
+        Js::invoke("{}.send({})", &[Ref(*request), Str(body.into())]);
     } else {
-        Js::invoke("{}.send()", &[Ref(&request)]);
+        Js::invoke("{}.send()", &[Ref(*request)]);
     }
 
     // handle response
@@ -69,18 +69,18 @@ pub fn fetch(options: FetchOptions) -> impl Future<Output = FetchResponse> {
     let future_id = future.id();
     let function_ref = create_empty_callback(move || {
 
-        let status = Js::invoke_number("return {}.status", &[Ref(&r2)]) as u32;
+        let status = Js::invoke_number("return {}.status", &[Ref(*r2)]) as u32;
         let result = match options.response_type {
             FetchResponseType::Text => {
-                FetchResponse::Text(status, Js::invoke_str("return {}.responseText", &[Ref(&r2)]))
+                FetchResponse::Text(status, Js::invoke_str("return {}.responseText", &[Ref(*r2)]))
             }
             FetchResponseType::ArrayBuffer => {
-                FetchResponse::ArrayBuffer(status, Js::invoke_buffer("return {}.response", &[Ref(&r2)]))
+                FetchResponse::ArrayBuffer(status, Js::invoke_buffer("return {}.response", &[Ref(*r2)]))
             }
         };
         RuntimeFuture::wake(future_id, result);
     });
-    Js::invoke("{}.onload = {}", &[Ref(&request), Ref(&function_ref)]);
+    Js::invoke("{}.onload = {}", &[Ref(*request), Ref(function_ref)]);
 
     return future;
 }

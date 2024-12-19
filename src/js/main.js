@@ -66,14 +66,6 @@ const getWasmImports = () => {
             const result = runFunction(c_ptr, c_len, p_ptr, p_len)
             if (r_type !== 0 && (result === undefined || result === null)) throw new Error('Invalid return')
 
-            // typeof result === "string"
-            // typeof result === "boolean"
-            // typeof result === "number"
-            // typeof result === "object"
-            // typeof result === "undefined"
-
-
-
             if (typeof result === "undefined") {
               return (BigInt(0) << 32n) | BigInt(result)
             }  else if (typeof result === "number") {

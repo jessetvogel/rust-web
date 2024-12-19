@@ -88,7 +88,7 @@ impl<T: 'static> Runtime<T> {
         fn wake_fn<T: 'static>(ptr: *const ()) {
             let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };
             let function_ref = create_empty_callback(move || { Runtime::poll(&_task); });
-            Js::invoke("window.setTimeout({},0)", &[Ref(&function_ref)]);
+            Js::invoke("window.setTimeout({},0)", &[Ref(function_ref)]);
         }
         fn drop_fn<T>(ptr: *const ()) {
             let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };

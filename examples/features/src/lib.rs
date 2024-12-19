@@ -34,7 +34,7 @@ async fn fetch_json(method: HttpMethod, url: String, body: Option<JsonValue>) ->
 pub fn sleep(ms: impl Into<f64>) -> impl Future<Output = ()> {
     let future = RuntimeFuture::new();
     let callback_ref = create_future_callback(future.id());
-    Js::invoke("window.setTimeout({},{})", &[Ref(&callback_ref), Number(ms.into())]);
+    Js::invoke("window.setTimeout({},{})", &[Ref(callback_ref), Number(ms.into())]);
     future
 }
 
@@ -56,11 +56,11 @@ fn page1() -> El {
         .on_mount(move |_| {
 
             // add listener
-            let body = Js::invoke_ref("return document.querySelector({})", &[Str("body")]);
+            let body = Js::invoke_ref("return document.querySelector({})", &[Str("body".into())]);
             let signal_key_clone = signal_key_clone.clone();
 
             El::from(&body).on_event("keydown", move |e| {
-                let key_code = Js::invoke_number("return {}[{}]", &[Ref(&e), Str("key_code")]);
+                let key_code = Js::invoke_number("return {}[{}]", &[Ref(e), Str("key_code".into())]);
                 let key_name = keycodes::KEYBOARD_MAP[key_code as usize];
                 let text = format!("Pressed: {}", key_name);
                 signal_key_clone.set(text);
@@ -84,7 +84,7 @@ fn page1() -> El {
                 let url = format!("https://pokeapi.co/api/v2/pokemon/{}", 1);
                 let result = fetch_json(HttpMethod::GET, url, None).await;
                 let name = result["name"].as_str().unwrap();
-                Js::invoke("alert({})", &[Str(&name.to_owned())]);
+                Js::invoke("alert({})", &[Str(name.into())]);
             });
         }))
         .child(El::new("button").text("page 2").classes(&BUTTON_CLASSES).on_event("click", move |_| {
@@ -97,15 +97,15 @@ fn page1() -> El {
         }))
         .child(El::new("div").text("0").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(&el_clone), Str(&v.to_string())]); });
+            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.to_string())]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(&el_clone), Str(&v)]); });
+            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.into())]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(&el_clone), Str(&v)]); });
+            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.into())]); });
         }))
 }
 
@@ -120,7 +120,7 @@ fn page2() -> El {
 #[no_mangle]
 pub fn main() {
 
-    std::panic::set_hook(Box::new(|e| { Js::invoke("console.log({})", &[Str(&e.to_string())]); }));
+    std::panic::set_hook(Box::new(|e| { Js::invoke("console.log({})", &[Str(e.to_string())]); }));
 
     // get pages
     let pages = [
@@ -129,7 +129,7 @@ pub fn main() {
     ];
 
     // load page
-    let body = Js::invoke_ref("return document.querySelector({})", &[Str("body")]);
+    let body = Js::invoke_ref("return document.querySelector({})", &[Str("body".into())]);
     let pathname = Js::invoke_str("return window.location.pathname", &[]);
     let (_, page) = pages.iter().find(|&(s, _)| *s == pathname).unwrap_or(&pages[0]);
     page.element.mount(&body);
