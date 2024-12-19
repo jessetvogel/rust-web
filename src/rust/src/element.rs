@@ -88,16 +88,17 @@ impl El {
 #[cfg(test)]
 mod tests {
 
-    // use super::*;
+    use super::*;
 
-    // #[test]
-    // fn test_element() {
+    #[test]
+    #[ignore]
+    fn test_element() {
 
-    //     let el = El::new("div").classes(&[])
-    //         .child(El::new("button").text("button 1"))
-    //         .child(El::new("button").text("button 2"));
-    //     assert_eq!(el, El::from(&ObjectRef::new(0)));
+        let el = El::new("div").classes(&[])
+            .child(El::new("button").text("button 1"))
+            .child(El::new("button").text("button 2"));
+        assert_eq!(el, El::from(&ObjectRef::new(0)));
 
-    // }
+    }
 
 }

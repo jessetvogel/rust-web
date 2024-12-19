@@ -166,12 +166,12 @@ mod tests {
         // bigint
         assert_eq!(BigInt(42).serialize(), [vec![3], 42u64.to_le_bytes().to_vec()].concat());
 
-        // TODO string
-        // let text = "hello";
-        // let text_ptr = text.as_ptr() as u32;
-        // let text_len = text.len() as u64;
-        // let expected = [vec![4], text_ptr.to_le_bytes().to_vec(), text_len.to_le_bytes().to_vec()].concat();
-        // assert_eq!(Str(text.into()).serialize(), expected);
+        // string
+        let text = "hello".to_owned();
+        let text_ptr = text.as_ptr() as u32;
+        let text_len = text.len() as u64;
+        let expected = [vec![4], text_ptr.to_le_bytes().to_vec(), text_len.to_le_bytes().to_vec()].concat();
+        assert_eq!(Str(text).serialize(), expected);
 
         // bool
         assert_eq!(Bool(true).serialize(), vec![5]);
