@@ -8,7 +8,24 @@ extern "C" {
 }
 
 #[cfg(test)]
-unsafe fn __invoke(_c_ptr: *const u8, _c_len: u32, _p_ptr: *const u8, _p_len: u32) -> u64 { 0 }
+unsafe fn __invoke(_c_ptr: *const u8, _c_len: u32, _p_ptr: *const u8, _p_len: u32) -> u64 {
+
+    let bytes = unsafe { std::slice::from_raw_parts(_c_ptr, _c_len as usize) };
+    let code = std::str::from_utf8(bytes).unwrap();
+    if code == "function() { return Math.random() * Number.MAX_SAFE_INTEGER }" {
+        let (r_type, r_value) = (1, 0); // number
+        ((r_type as u64) << 32) | (r_value as u64)
+    } else if code == "function(p0) { return document.createElement(p0) }" {
+        let (r_type, r_value) = (2, 0); // object ref
+        ((r_type as u64) << 32) | (r_value as u64)
+    } else if code == "function(p0) { return document.createTextNode(p0) }" {
+        let (r_type, r_value) = (2, 0); // object ref
+        ((r_type as u64) << 32) | (r_value as u64)
+    } else {
+        0
+    }
+
+}
 #[cfg(test)]
 unsafe fn __deallocate(_object_id: *const u8) {}
 

@@ -91,7 +91,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore]
     fn test_element() {
 
         let el = El::new("div").classes(&[])

@@ -116,7 +116,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore]
     fn test_await() {
 
         Runtime::block_on(async move {
