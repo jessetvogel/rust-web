@@ -3,12 +3,12 @@ use std::ops::Deref;
 
 #[cfg(not(test))]
 extern "C" {
-    fn __invoke_and_return(c_ptr: *const u8, c_len: u32, p_ptr: *const u8, p_len: u32) -> u64;
+    fn __invoke(c_ptr: *const u8, c_len: u32, p_ptr: *const u8, p_len: u32) -> u64;
     fn __deallocate(object_id: *const u8);
 }
 
 #[cfg(test)]
-unsafe fn __invoke_and_return(_c_ptr: *const u8, _c_len: u32, _p_ptr: *const u8, _p_len: u32) -> u64 { 0 }
+unsafe fn __invoke(_c_ptr: *const u8, _c_len: u32, _p_ptr: *const u8, _p_len: u32) -> u64 { 0 }
 #[cfg(test)]
 unsafe fn __deallocate(_object_id: *const u8) {}
 
@@ -118,7 +118,7 @@ impl Js {
         let code = Self::__code(code, params);
         let params = params.iter().flat_map(InvokeParam::serialize).collect::<Vec<_>>();
 
-        let packed = unsafe { __invoke_and_return(code.as_ptr(), code.len() as u32, params.as_ptr(), params.len() as u32) };
+        let packed = unsafe { __invoke(code.as_ptr(), code.len() as u32, params.as_ptr(), params.len() as u32) };
         let result_type = (packed >> 32) as u32;
         let result_value = (packed & 0xFFFFFFFF) as u32;
 
