@@ -64,7 +64,7 @@ const getWasmImports = () => {
         __invoke (c_ptr, c_len, p_ptr, p_len) {
             const result = runFunction(c_ptr, c_len, p_ptr, p_len)
             if (typeof result === "undefined") {
-              return (BigInt(0) << 32n) | BigInt(result)
+              return (BigInt(0) << 32n) | BigInt(0)
             }  else if (typeof result === "number") {
               return (BigInt(1) << 32n) | BigInt(result)
             } else if (typeof result === "object") {
