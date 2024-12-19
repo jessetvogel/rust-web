@@ -34,7 +34,7 @@ async fn fetch_json(method: HttpMethod, url: String, body: Option<JsonValue>) ->
 pub fn sleep(ms: impl Into<f64>) -> impl Future<Output = ()> {
     let future = RuntimeFuture::new();
     let callback_ref = create_future_callback(future.id());
-    Js::invoke("window.setTimeout({},{})", &[Ref(&callback_ref), Float(ms.into())]);
+    Js::invoke("window.setTimeout({},{})", &[Ref(&callback_ref), Number(ms.into())]);
     future
 }
 

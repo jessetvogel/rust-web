@@ -29,16 +29,16 @@ impl Deref for ObjectRef {
     }
 }
 
+// NOTE: Numbers in Javascript are represented by 64-bits floats
+// https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-ecmascript-language-types-number-type
 #[derive(Debug)]
 pub enum InvokeParam<'a> {
     Undefined,
     Null,
-    Float(f64),
     BigInt(i64),
     Str(&'a str),
     Bool(bool),
-    Int(i32),
-    Uint(u32),
+    Number(f64),
     Ref(&'a ObjectRef),
 }
 
@@ -51,13 +51,11 @@ impl<'a> InvokeParam<'a> {
         match self {
             Undefined => vec![0],
             Null => vec![1],
-            Float(f) => [vec![2], f.to_le_bytes().to_vec()].concat(),
             BigInt(i) => [vec![3], i.to_le_bytes().to_vec()].concat(),
             Str(s) => [vec![4], (s.as_ptr() as u32).to_le_bytes().to_vec(), s.len().to_le_bytes().to_vec()].concat(),
             Bool(b) => vec![if *b { 5 } else { 6 }],
             Ref(i) => [vec![7], i.0.to_le_bytes().to_vec()].concat(),
-            Uint(i) => [vec![8], i.to_le_bytes().to_vec()].concat(),
-            Int(i) => [vec![9], i.to_le_bytes().to_vec()].concat(),
+            Number(i) => [vec![8], i.to_le_bytes().to_vec()].concat(),
         }
     }
 }
@@ -128,9 +126,6 @@ mod tests {
         // null
         assert_eq!(Null.serialize(), vec![1]);
 
-        // float
-        assert_eq!(Float(0.42f64).serialize(), [vec![2], 0.42f64.to_le_bytes().to_vec()].concat());
-
         // bigint
         assert_eq!(BigInt(42).serialize(), [vec![3], 42u64.to_le_bytes().to_vec()].concat());
 
@@ -149,10 +144,7 @@ mod tests {
         assert_eq!(Ref(&ObjectRef(42)).serialize(), [vec![7], 42u32.to_le_bytes().to_vec()].concat());
 
         // uint
-        assert_eq!(Uint(42).serialize(), [vec![8], 42u32.to_le_bytes().to_vec()].concat());
-
-        // int
-        assert_eq!(Int(-42).serialize(), [vec![9], (-42i32).to_le_bytes().to_vec()].concat());
+        assert_eq!(Number(42.into()).serialize(), [vec![8], 42u32.to_le_bytes().to_vec()].concat());
 
     }
 
