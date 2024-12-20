@@ -86,7 +86,7 @@ const getWasmImports = () => {
             } else if (typeof result === "bigint") {
               return (BigInt(5) << 32n) | BigInt(result)
             } else if (typeof result === "boolean") {
-              return (BigInt(5) << 32n) | BigInt(result)
+              return (BigInt(6) << 32n) | BigInt(result)
             } else {
               throw new Error("Invalid result type")
             }
