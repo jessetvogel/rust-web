@@ -63,11 +63,7 @@ pub fn cleanup_callback(function_ref: ObjectRef) {
 pub fn handle_callback(callback_id: u32, param: i32) {
 
     let object_ref = match param {
-        n if n >= 0 => {
-            let object_ref = ObjectRef::new(param as u32);
-            Js::deallocate(object_ref);
-            Some(object_ref)
-        }
+        n if n >= 0 => { Some(ObjectRef::new(param as u32)) }
         -1 => { None }
         -2 => { RuntimeFuture::wake(callback_id, ()); return; }
         _ => { panic!("Invalid value") }
@@ -79,6 +75,10 @@ pub fn handle_callback(callback_id: u32, param: i32) {
         }).unwrap();
         unsafe { (*handler)(object_ref) }
     });
+
+    if let Some(object_ref) = object_ref {
+        Js::deallocate(object_ref);
+    }
 }
 
 #[no_mangle]
