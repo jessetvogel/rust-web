@@ -12,22 +12,17 @@ unsafe fn __invoke(_c_ptr: *const u8, _c_len: u32, _p_ptr: *const u8, _p_len: u3
 
     let bytes = unsafe { std::slice::from_raw_parts(_c_ptr, _c_len as usize) };
     let code = std::str::from_utf8(bytes).unwrap();
-    if code == "function() { return Math.random() * (2 ** 32) }" {
-
+    let (r_type, r_value) = if code == "function() { return Math.random() * (2 ** 32) }" {
         crate::allocations::ALLOCATIONS.with_borrow_mut(|s| { s.push(b"0".to_vec()); });
-
-        let (r_type, r_value) = (1, 0); // number
-        ((r_type as u64) << 32) | (r_value as u64)
+        (1, 0) // number
     } else if code == "function(p0) { return document.createElement(p0) }" {
-        let (r_type, r_value) = (2, 0); // object ref
-        ((r_type as u64) << 32) | (r_value as u64)
+        (2, 0) // object ref
     } else if code == "function(p0) { return document.createTextNode(p0) }" {
-        let (r_type, r_value) = (2, 0); // object ref
-        ((r_type as u64) << 32) | (r_value as u64)
+        (2, 0) // object ref
     } else {
-        0
-    }
-
+        (0, 0) // undefined
+    };
+    ((r_type as u64) << 32) | (r_value as u64)
 }
 #[cfg(test)]
 unsafe fn __deallocate(_object_id: *const u8) {}
