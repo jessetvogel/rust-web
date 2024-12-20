@@ -1,6 +1,6 @@
 # TinyWeb 🌱 Rust on the client. No dependencies.
 
-Build the client-side with Rust. Compbine it with any http framework to build fullstack applications!
+Build the client-side with Rust. Combine it with any http framework to build fullstack applications!
 
 # What's TinyWeb?
 
