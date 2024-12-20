@@ -66,15 +66,15 @@ fn page1() -> El {
                 signal_key_clone.set(text);
             });
 
-            // TODO start timer
-            let _signal_time_clone = signal_time_clone.clone();
+            // start timer
+            let signal_time_clone = signal_time_clone.clone();
             Runtime::block_on(async move {
-            //     loop {
-            //         signal_time_clone.set("⏰ tik");
-            //         sleep(1_000).await;
-            //         signal_time_clone.set("⏰ tok");
-            //         sleep(1_000).await;
-            //     }
+                loop {
+                    signal_time_clone.set("⏰ tik");
+                    sleep(1_000).await;
+                    signal_time_clone.set("⏰ tok");
+                    sleep(1_000).await;
+                }
             });
 
         })

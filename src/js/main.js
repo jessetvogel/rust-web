@@ -68,12 +68,18 @@ const getWasmImports = () => {
             }  else if (typeof result === "number") {
               const ptr = writeBufferToMemory(textEncoder.encode(result))
               return (BigInt(1) << 32n) | BigInt(ptr)
-            } else if (typeof result === "object") {
+            } else if (typeof result === "function") {
               objects.push(result)
               return (BigInt(2) << 32n) | BigInt(objects.length - 1)
-            } else if (typeof result === "object" && result instanceof Uint8Array) {
-              const ptr = writeBufferToMemory(new Uint8Array(result))
-              return (BigInt(3) << 32n) | BigInt(ptr)
+            } else if (typeof result === "object") {
+              // because js has no primitive types for arrays
+              if (result instanceof Uint8Array) {
+                const ptr = writeBufferToMemory(new Uint8Array(result))
+                return (BigInt(3) << 32n) | BigInt(ptr)
+              } else {
+                objects.push(result)
+                return (BigInt(2) << 32n) | BigInt(objects.length - 1)
+              }
             } else if (typeof result === "string") {
               const ptr = writeBufferToMemory(textEncoder.encode(result))
               return (BigInt(4) << 32n) | BigInt(ptr)
@@ -81,6 +87,8 @@ const getWasmImports = () => {
               return (BigInt(5) << 32n) | BigInt(result)
             } else if (typeof result === "boolean") {
               return (BigInt(5) << 32n) | BigInt(result)
+            } else {
+              throw new Error("Invalid result type")
             }
         },
       __deallocate(object_id) {
