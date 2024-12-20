@@ -21,14 +21,17 @@ impl Router {
         let (_, current_page) = self.pages.iter().find(|&(s, _)| *s == pathname).unwrap();
         current_page.element.unmount();
 
-        // push state
+        // set html
+        let body = self.root.as_ref().unwrap();
+        Js::invoke("{}.innerHTML = {}", &[Ref(*body), Str("".into())]);
+
+        // mount new page
         let page = self.pages.get(route).unwrap();
+        page.element.mount(&body);
+
+        // push state
         let page_str = page.title.to_owned().unwrap_or_default();
         Js::invoke("window.history.pushState({ },{},{})", &[Str(page_str.into()), Str(route.into())]);
 
-        // mount new page
-        let body = self.root.as_ref().unwrap();
-        Js::invoke("{}.innerHTML = {}", &[Ref(*body), Str("".into())]);
-        page.element.mount(&body);
     }
 }
