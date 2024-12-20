@@ -12,7 +12,7 @@ unsafe fn __invoke(_c_ptr: *const u8, _c_len: u32, _p_ptr: *const u8, _p_len: u3
 
     let bytes = unsafe { std::slice::from_raw_parts(_c_ptr, _c_len as usize) };
     let code = std::str::from_utf8(bytes).unwrap();
-    if code == "function() { return Math.random() * Number.MAX_SAFE_INTEGER }" {
+    if code == "function() { return Math.random() * (2 ** 32) }" {
 
         crate::allocations::ALLOCATIONS.with_borrow_mut(|s| { s.push(b"0".to_vec()); });
 
