@@ -31,10 +31,10 @@ async fn fetch_json(method: HttpMethod, url: String, body: Option<JsonValue>) ->
     json::parse(&result.unwrap()).unwrap()
 }
 
-pub fn sleep(ms: impl Into<f64>) -> impl Future<Output = ()> {
+pub fn sleep(ms: f64) -> impl Future<Output = ()> {
     let future = RuntimeFuture::new();
     let callback_ref = create_future_callback(future.id());
-    Js::invoke("window.setTimeout({},{})", &[Ref(callback_ref), Number(ms.into())]);
+    Js::invoke("window.setTimeout({},{})", &[Ref(callback_ref), Number(ms)]);
     future
 }
 
@@ -71,9 +71,9 @@ fn page1() -> El {
             Runtime::block_on(async move {
                 loop {
                     signal_time_clone.set("⏰ tik");
-                    sleep(1_000).await;
+                    sleep(1_000.into()).await;
                     signal_time_clone.set("⏰ tok");
-                    sleep(1_000).await;
+                    sleep(1_000.into()).await;
                 }
             });
 
