@@ -42,7 +42,8 @@ impl<T> Future for RuntimeFuture<T> {
 impl <T: 'static> RuntimeFuture<T> {
     pub fn new() -> Self {
 
-        let future_id = Js::invoke("return Math.random() * Number.MAX_SAFE_INTEGER", &[]).to_num().unwrap();
+        // using `Number.MAX_SAFE_INTEGER` exceeds u32
+        let future_id = Js::invoke("return Math.random() * (2 ** 32)", &[]).to_num().unwrap();
         let state = RuntimeState { completed: false, waker: None, result: None, };
         let state_arc = Arc::new(Mutex::new(state));
         STATE_MAP.with_borrow_mut(|s| {
