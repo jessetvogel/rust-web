@@ -44,7 +44,7 @@ fn component() -> El {
 
 #[no_mangle]
 pub fn main() {
-    let body = Js::invoke_ref("return document.querySelector('body')"]);
+    let body = Js::invoke("return document.querySelector('body')"]).to_ref().unwrap();
     component().mount(&body);
 }
 ```
@@ -75,7 +75,7 @@ is triggered in [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme
 
 Once the wasm file is loaded, the `main` function is [called](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L96) and this function acts as an initialization hook similar to `DOMContentLoaded` in vanilla javascript or `useEffect` in React. The `main` function usually makes the initial rendering and registers listeners for different DOM elements.
 
-Every time a rust function wants to invoke a browser API it uses the [__invoke_and_return](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs#L84) which calls the [corresponding function](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L64) in javascript. Callbacks such as event listeners are register through the `__invoke_and_return` function and then call a dedicated function in wasm named [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs#L14).
+Every time a rust function wants to invoke a browser API it uses the [__invoke](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs#L84) which calls the [corresponding function](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L64) in javascript. Callbacks such as event listeners are register through the `__invoke` function and then call a dedicated function in wasm named [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs#L14).
 
 # How to's & guides
 
