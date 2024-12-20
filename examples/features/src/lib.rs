@@ -97,15 +97,15 @@ fn page1() -> El {
         }))
         .child(El::new("div").text("0").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.to_string())]); });
+            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(el_clone.element), Str(v.to_string())]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.into())]); });
+            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(el_clone.element), Str(v.into())]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(*el_clone), Str(v.into())]); });
+            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(el_clone.element), Str(v.into())]); });
         }))
 }
 
