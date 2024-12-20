@@ -154,11 +154,11 @@ One on hand, it brings stronger typing to javascript improving correctness.
 
 One the other hand, it comes with a heavy build system with heavy cost on simplicity.
 
-While undecided, I had to build something that really relied on correctness, a financial application, and realized that how much I don't trust typescript even what's design to do.
+While undecided, I had to build something that really relied on correctness, a financial application, and realized that how much I don't trust typescript even for what's design to do.
 
-I then tried different wasm based frameworks like Leptos and Yew. While great at correctness, they require hundereds of dependencies just to get started. After digging more into it, I realised that all these dependencies come from `wasm-bindgen` that's maintained by [The Rust and WebAssembly Working Group](https://rustwasm.github.io).
+I then tried different wasm based frameworks like Leptos and Yew. These were great at correctness, I was confident that my code would work but they require hundereds of dependencies just to get started. At that point I digged into it more and realised that these dependencies come from `wasm-bindgen`.
 
-The `wasm-bindgen` crate is great, it focuses on performance and has bindings for most browser APIs but that came at a cost through the number of dependencies it requires. For reference, leptos development tool `cargo-leptos` depends on other 485 crates and `leptos` itself on 231 more.
+The `wasm-bindgen` crate is great, it's the standard in developing client side code with Rust and wasm and is maintained by [The Rust and WebAssembly Working Group](https://rustwasm.github.io). The crate focuses on performance and has bindings for most browser APIs but that came at a cost through the number of dependencies it requires. For reference, leptos development tool `cargo-leptos` depends on other 485 crates and `leptos` itself on 231 more.
 
 So, I setup out to build a web framework that aims for both simplicity and correctness, one that's based on Rust but has no dependencies.
 
