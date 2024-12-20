@@ -12,7 +12,7 @@ use std::{
 use crate::handlers::create_empty_callback;
 use crate::invoke::Js;
 
-use crate::invoke::InvokeParam::*;
+use crate::invoke::JsValue::*;
 
 thread_local! {
     static STATE_MAP: RefCell<HashMap<u32, Box<dyn Any>>> = Default::default(); // Cast: Arc<Mutex<RuntimeState<T>>>
@@ -42,14 +42,15 @@ impl<T> Future for RuntimeFuture<T> {
 impl <T: 'static> RuntimeFuture<T> {
     pub fn new() -> Self {
 
-        let future_id = Js::invoke_number("return Math.random() * Number.MAX_SAFE_INTEGER", &[]);
+        // using `Number.MAX_SAFE_INTEGER` exceeds u32
+        let future_id = Js::invoke("return Math.random() * (2 ** 32)", &[]).to_num().unwrap();
         let state = RuntimeState { completed: false, waker: None, result: None, };
         let state_arc = Arc::new(Mutex::new(state));
         STATE_MAP.with_borrow_mut(|s| {
-            s.insert(future_id, Box::new(state_arc.clone()));
+            s.insert(future_id as u32, Box::new(state_arc.clone()));
         });
 
-        Self { id: future_id, state: state_arc }
+        Self { id: future_id as u32, state: state_arc }
     }
 
     pub fn id(&self) -> u32 { self.id }
@@ -88,7 +89,7 @@ impl<T: 'static> Runtime<T> {
         fn wake_fn<T: 'static>(ptr: *const ()) {
             let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };
             let function_ref = create_empty_callback(move || { Runtime::poll(&_task); });
-            Js::invoke("window.setTimeout({},0)", &[Ref(&function_ref)]);
+            Js::invoke("window.setTimeout({},0)", &[Ref(function_ref)]);
         }
         fn drop_fn<T>(ptr: *const ()) {
             let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };

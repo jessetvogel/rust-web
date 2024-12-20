@@ -2,7 +2,7 @@
 use crate::runtime::RuntimeFuture;
 use crate::invoke::{Js, ObjectRef};
 
-use crate::invoke::InvokeParam::*;
+use crate::invoke::JsValue::*;
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -22,7 +22,7 @@ pub fn create_callback(mut handler: impl FnMut(ObjectRef) + 'static) -> ObjectRe
         const objectId = objects.length - 1;
         return objectId;
     "#;
-    let object_id = Js::invoke_number(code, &[]);
+    let object_id = Js::invoke(code, &[]).to_num().unwrap();
     let function_ref = ObjectRef::new(object_id as u32);
     insert_callback(function_ref, move |value| { handler(value.unwrap()); });
     function_ref
@@ -36,14 +36,14 @@ pub fn create_empty_callback(mut handler: impl FnMut() + 'static) -> ObjectRef {
         const objectId = objects.length - 1;
         return objectId;
     "#;
-    let object_id = Js::invoke_number(code, &[]);
+    let object_id = Js::invoke(code, &[]).to_num().unwrap();
     let function_ref = ObjectRef::new(object_id as u32);
     insert_callback(function_ref, move |_value| { handler(); });
     function_ref
 }
 
 pub fn create_future_callback(future_id: u32) -> ObjectRef {
-    Js::invoke_ref("return () => { wasmModule.instance.exports.handle_callback({},-2); }", &[Number(future_id as f64)])
+    Js::invoke("return () => { wasmModule.instance.exports.handle_callback({},-2); }", &[Number(future_id as f64)]).to_ref().unwrap()
 }
 
 pub fn insert_callback(function_ref: ObjectRef, cb: impl FnMut(Option<ObjectRef>) + 'static) {
@@ -63,11 +63,7 @@ pub fn cleanup_callback(function_ref: ObjectRef) {
 pub fn handle_callback(callback_id: u32, param: i32) {
 
     let object_ref = match param {
-        n if n >= 0 => {
-            let object_ref = ObjectRef::new(param as u32);
-            Js::deallocate(object_ref);
-            Some(object_ref)
-        }
+        n if n >= 0 => { Some(ObjectRef::new(param as u32)) }
         -1 => { None }
         -2 => { RuntimeFuture::wake(callback_id, ()); return; }
         _ => { panic!("Invalid value") }
@@ -79,6 +75,10 @@ pub fn handle_callback(callback_id: u32, param: i32) {
         }).unwrap();
         unsafe { (*handler)(object_ref) }
     });
+
+    if let Some(object_ref) = object_ref {
+        Js::deallocate(object_ref);
+    }
 }
 
 #[no_mangle]
