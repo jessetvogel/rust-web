@@ -16,8 +16,6 @@ pub fn main() {
     Js::invoke("setTimeout({}, 1000)", &[ Ref(function_ref)]);
 
     // future callback
-    // TODO
-
     Runtime::block_on(async move {
         let future = RuntimeFuture::<()>::new();
         let callback_ref = create_future_callback(future.id());
