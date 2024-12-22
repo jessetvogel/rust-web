@@ -13,7 +13,6 @@ use tinyweb::router::{Page, Router};
 use tinyweb::signals::Signal;
 use tinyweb::element::El;
 
-use tinyweb::http::*;
 use tinyweb::invoke::*;
 
 const BUTTON_CLASSES: &[&str] = &["bg-blue-500", "hover:bg-blue-700", "text-white", "p-2", "rounded", "m-2"];
@@ -22,13 +21,17 @@ thread_local! {
     pub static ROUTER: RefCell<Router> = RefCell::new(Router::default());
 }
 
-async fn fetch_json(method: HttpMethod, url: String, body: Option<JsonValue>) -> JsonValue {
-    let body_temp = body.map(|s| s.dump());
-    let body = body_temp.as_ref().map(|s| s.as_str());
-    let fetch_options = FetchOptions { method, url: &url, body, ..Default::default()};
-    let fetch_res = fetch(fetch_options).await;
-    let result = match fetch_res { FetchResponse::Text(_, d) => Ok(d), _ => Err(()), };
-    json::parse(&result.unwrap()).unwrap()
+async fn fetch_json(method: &str, url: &str, body: Option<JsonValue>) -> JsonValue {
+    let body = body.map(|s| s.dump()).unwrap_or_default();
+    let (callback_ref, future) = tinyweb::callbacks::create_async_callback();
+    let request = r#"
+        const options = { method: {}, headers: { 'Content-Type': 'application/json', data: {} } };
+        fetch({}, options).then(r => r.json()).then(r => { {}(r) })
+    "#;
+    Js::invoke(request, &[Str(method.into()), Str(body), Str(url.into()), Ref(callback_ref)]);
+    let object_id = future.await;
+    let result = Js::invoke("return JSON.stringify(objects[{}])", &[Number(*object_id as f64)]).to_str().unwrap();
+    json::parse(&result).unwrap()
 }
 
 pub fn sleep(ms: f64) -> impl Future<Output = ()> {
@@ -82,7 +85,7 @@ fn page1() -> El {
         .child(El::new("button").text("api").classes(&BUTTON_CLASSES).on_event("click", |_| {
             Runtime::block_on(async move {
                 let url = format!("https://pokeapi.co/api/v2/pokemon/{}", 1);
-                let result = fetch_json(HttpMethod::GET, url, None).await;
+                let result = fetch_json("GET", &url, None).await;
                 let name = result["name"].as_str().unwrap();
                 Js::invoke("alert({})", &[Str(name.into())]);
             });
