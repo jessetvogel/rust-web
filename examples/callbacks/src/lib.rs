@@ -16,10 +16,10 @@ pub fn main() {
     Js::invoke("setTimeout({}, 1000)", &[ Ref(function_ref)]);
 
     // future callback
+    let future = RuntimeFuture::<()>::new();
+    let callback_ref = create_future_callback(future.id());
+    Js::invoke("window.setTimeout({},2000)", &[Ref(callback_ref)]);
     Runtime::block_on(async move {
-        let future = RuntimeFuture::<()>::new();
-        let callback_ref = create_future_callback(future.id());
-        Js::invoke("window.setTimeout({},2000)", &[Ref(callback_ref)]);
         future.await;
         Js::invoke("console.log('invoke timer future')", &[]);
     });
