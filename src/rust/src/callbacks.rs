@@ -69,8 +69,7 @@ mod tests {
         // add listener
         let has_run = Rc::new(RefCell::new(false));
         let has_run_clone = has_run.clone();
-        let cb = move |_| { *has_run_clone.borrow_mut() = true; };
-        CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.insert(function_ref.clone(), Box::new(cb)); }).unwrap(); });
+        create_callback(move |_| { *has_run_clone.borrow_mut() = true; });
 
         // call listener
         handle_callback(*function_ref, 0);
