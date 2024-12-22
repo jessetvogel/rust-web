@@ -16,12 +16,8 @@ pub fn main() {
     std::panic::set_hook(Box::new(|e| { Js::invoke("console.log({})", &[Str(e.to_string())]); }));
 
     let button = Js::invoke("return document.createElement({})", &[Str("button".into())]).to_ref().unwrap();
-    let button_text = Js::invoke("return document.createTextNode({})", &[Str("Click".into())]).to_ref().unwrap();
-    Js::invoke("{}.appendChild({})", &[Ref(button), Ref(button_text)]);
-    add_click_event_listener(&button, move |_s| {
-        let button = Js::invoke("return document.createElement({})", &[Str("button".into())]).to_ref().unwrap();
-        add_click_event_listener(&button, |_s| {});
-    });
+    Js::invoke("{}.textContent = 'Click'", &[Ref(button)]);
+    add_click_event_listener(&button, move |_s| { Js::invoke("alert('hello')", &[]); });
 
     let body = Js::invoke("return document.querySelector({})", &[Str("body".into())]).to_ref().unwrap();
     Js::invoke("{}.appendChild({})", &[Ref(body), Ref(button)]);
