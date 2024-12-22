@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 thread_local! {
-    pub static CALLBACK_HANDLERS: Mutex<HashMap<ObjectRef, Box<dyn FnMut(Option<ObjectRef>) + 'static>>> = Default::default();
+    pub static CALLBACK_HANDLERS: Mutex<HashMap<ObjectRef, Box<dyn FnMut(ObjectRef) + 'static>>> = Default::default();
 }
 
 pub fn create_callback(mut handler: impl FnMut(ObjectRef) + 'static) -> ObjectRef {
@@ -24,7 +24,7 @@ pub fn create_callback(mut handler: impl FnMut(ObjectRef) + 'static) -> ObjectRe
     "#;
     let object_id = Js::invoke(code, &[]).to_num().unwrap();
     let function_ref = ObjectRef::new(object_id as u32);
-    insert_callback(function_ref, move |value| { handler(value.unwrap()); });
+    insert_callback(function_ref, move |value| { handler(value); });
     function_ref
 }
 
@@ -32,7 +32,7 @@ pub fn create_future_callback(future_id: u32) -> ObjectRef {
     Js::invoke("return () => { wasmModule.instance.exports.handle_future_callback({}); }", &[Number(future_id as f64)]).to_ref().unwrap()
 }
 
-pub fn insert_callback(function_ref: ObjectRef, cb: impl FnMut(Option<ObjectRef>) + 'static) {
+pub fn insert_callback(function_ref: ObjectRef, cb: impl FnMut(ObjectRef) + 'static) {
     CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.insert(function_ref.clone(), Box::new(cb)); }).unwrap(); });
 }
 
@@ -59,7 +59,7 @@ pub fn handle_callback(callback_id: u32, param: i32) {
         let handler = s.lock().map(|mut s| {
             s.get_mut(&ObjectRef::new(callback_id)).unwrap() as *mut Box<dyn FnMut(_) + 'static>
         }).unwrap();
-        unsafe { (*handler)(Some(object_ref)) }
+        unsafe { (*handler)(object_ref) }
     });
 
     Js::deallocate(object_ref);
