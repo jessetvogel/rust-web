@@ -43,21 +43,32 @@ pub enum JsValue {
     Buffer(Vec<u8>),
 }
 
-pub use JsValue::*;
+impl From<&str> for JsValue { fn from(s: &str) -> Self { Self::Str(s.to_string()) } }
+impl From<String> for JsValue { fn from(s: String) -> Self { Self::Str(s) } }
+impl From<f64> for JsValue { fn from(n: f64) -> Self { Self::Number(n) } }
+impl From<f32> for JsValue { fn from(n: f32) -> Self { Self::Number(n as f64) } }
+impl From<u32> for JsValue { fn from(n: u32) -> Self { Self::Number(n as f64) } }
+impl From<u64> for JsValue { fn from(n: u64) -> Self { Self::Number(n as f64) } }
+impl From<i32> for JsValue { fn from(n: i32) -> Self { Self::Number(n as f64) } }
+impl From<i64> for JsValue { fn from(n: i64) -> Self { Self::Number(n as f64) } }
+impl From<ObjectRef> for JsValue { fn from(s: ObjectRef) -> Self { Self::Ref(s) } }
+impl From<&ObjectRef> for JsValue { fn from(s: &ObjectRef) -> Self { Self::Ref(s.to_owned()) } }
+
+// pub use JsValue::*;
 
 impl JsValue {
 
     // layout: type (1 byte) - data (var length)
     pub fn serialize(&self) -> Vec<u8> {
         match self {
-            Undefined => vec![0],
-            Null => vec![1],
-            Number(i) => [vec![2], i.to_le_bytes().to_vec()].concat(),
-            BigInt(i) => [vec![3], i.to_le_bytes().to_vec()].concat(),
-            Str(s) => [vec![4], (s.as_ptr() as u32).to_le_bytes().to_vec(), s.len().to_le_bytes().to_vec()].concat(),
-            Bool(b) => vec![if *b { 5 } else { 6 }],
-            Ref(i) => [vec![7], i.0.to_le_bytes().to_vec()].concat(),
-            Buffer(b) => [vec![8], b.to_owned()].concat(),
+            JsValue::Undefined => vec![0],
+            JsValue::Null => vec![1],
+            JsValue::Number(i) => [vec![2], i.to_le_bytes().to_vec()].concat(),
+            JsValue::BigInt(i) => [vec![3], i.to_le_bytes().to_vec()].concat(),
+            JsValue::Str(s) => [vec![4], (s.as_ptr() as u32).to_le_bytes().to_vec(), s.len().to_le_bytes().to_vec()].concat(),
+            JsValue::Bool(b) => vec![if *b { 5 } else { 6 }],
+            JsValue::Ref(i) => [vec![7], i.0.to_le_bytes().to_vec()].concat(),
+            JsValue::Buffer(b) => [vec![8], b.to_owned()].concat(),
         }
     }
 
@@ -173,81 +184,81 @@ mod tests {
     fn test_params() {
 
         // undefined
-        assert_eq!(Undefined.serialize(), vec![0]);
+        assert_eq!(JsValue::Undefined.serialize(), vec![0]);
 
         // null
-        assert_eq!(Null.serialize(), vec![1]);
+        assert_eq!(JsValue::Null.serialize(), vec![1]);
 
         // number
-        assert_eq!(Number(42.into()).serialize(), [vec![2], 42f64.to_le_bytes().to_vec()].concat());
+        assert_eq!(JsValue::Number(42.into()).serialize(), [vec![2], 42f64.to_le_bytes().to_vec()].concat());
 
         // bigint
-        assert_eq!(BigInt(42).serialize(), [vec![3], 42u64.to_le_bytes().to_vec()].concat());
+        assert_eq!(JsValue::BigInt(42).serialize(), [vec![3], 42u64.to_le_bytes().to_vec()].concat());
 
         // string
         let text = "hello".to_owned();
         let text_ptr = text.as_ptr() as u32;
         let text_len = text.len() as u64;
         let expected = [vec![4], text_ptr.to_le_bytes().to_vec(), text_len.to_le_bytes().to_vec()].concat();
-        assert_eq!(Str(text).serialize(), expected);
+        assert_eq!(JsValue::Str(text).serialize(), expected);
 
         // bool
-        assert_eq!(Bool(true).serialize(), vec![5]);
-        assert_eq!(Bool(false).serialize(), vec![6]);
+        assert_eq!(JsValue::Bool(true).serialize(), vec![5]);
+        assert_eq!(JsValue::Bool(false).serialize(), vec![6]);
 
         // object ref
-        assert_eq!(Ref(ObjectRef(42)).serialize(), [vec![7], 42u32.to_le_bytes().to_vec()].concat());
+        assert_eq!(JsValue::Ref(ObjectRef(42)).serialize(), [vec![7], 42u32.to_le_bytes().to_vec()].concat());
 
         // buffer
-        assert_eq!(Buffer(vec![1, 2, 3]).serialize(), [vec![8], vec![1, 2, 3]].concat());
+        assert_eq!(JsValue::Buffer(vec![1, 2, 3]).serialize(), [vec![8], vec![1, 2, 3]].concat());
 
     }
 
     #[test]
     fn test_code() {
         // prompt
-        let code = Js::__code("return prompt({},{})", &[Str("a".into()), Str("b".into())]);
+        let code = Js::__code("return prompt({},{})", &["a".into(), "b".into()]);
         let expected_code = "function(p0,p1){ return prompt(p0,p1) }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // console log
-        let code = Js::__code("console.log({})", &[Str("a".into())]);
+        let code = Js::__code("console.log({})", &["a".into()]);
         let expected_code = "function(p0){ console.log(p0) }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // alert
-        let code = Js::__code("alert({})", &[Str("a".into())]);
+        let code = Js::__code("alert({})", &["a".into()]);
         let expected_code = "function(p0){ alert(p0) }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // set attribute
-        let code = Js::__code("{}.setAttribute({},{})", &[Ref(ObjectRef(0)), Str("a".into()), Str("b".into())]);
+        let code = Js::__code("{}.setAttribute({},{})", &[ObjectRef(0).into(), "a".into(), "b".into()]);
         let expected_code = "function(p0,p1,p2){ p0.setAttribute(p1, p2) }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // append child
-        let code = Js::__code("{}.appendChild({})", &[Ref(ObjectRef(0)), Ref(ObjectRef(0))]);
+        let code = Js::__code("{}.appendChild({})", &[ObjectRef(0).into(), ObjectRef(0).into()]);
         let expected_code = "function(p0,p1){ p0.appendChild(p1) }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // add class
-        let code = Js::__code("{}.classList.add({})", &[Ref(ObjectRef(0)), Str("a".into())]);
+        let code = Js::__code("{}.classList.add({})", &[ObjectRef(0).into(), "a".into()]);
         let expected_code = "function(p0,p1){ p0.classList.add(p1) }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // set property
-        let code = Js::__code("{}[{}] = {}", &[Ref(ObjectRef(0)), Str("a".into()), Str("a".into())]);
+        let code = Js::__code("{}[{}] = {}", &[ObjectRef(0).into(), "a".into(), "a".into()]);
         let expected_code = "function(p0,p1,p2){ p0[p1] = p2 }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // set inner html
-        let code = Js::__code("{}.innerHTML = {}", &[Ref(ObjectRef(0)), Str("a".into())]);
+        let code = Js::__code("{}.innerHTML = {}", &[ObjectRef(0).into(), "a".into()]);
         let expected_code = "function(p0,p1){ p0.innerHTML = p1 }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // history push state
         // NOTE: {} is parsed as the first parameter
-        let code = Js::__code("window.history.pushState({ },{},{})", &[Str("a".into()), Str("b".into())]);
+        let code = Js::__code("window.history.pushState({ },{},{})", &["a".into(), "b".into()]);
         let expected_code = "function(p0,p1){ window.history.pushState({ },p0,p1) }";
         assert_eq!(cs(&code), cs(&expected_code));
 
@@ -257,12 +268,12 @@ mod tests {
         assert_eq!(cs(&code), cs(&expected_code));
 
         // get property string
-        let code = Js::__code("return {}[{}]", &[Ref(ObjectRef(0)), Str("b".into())]);
+        let code = Js::__code("return {}[{}]", &[ObjectRef(0).into(), "b".into()]);
         let expected_code = "function(p0,p1){ return p0[p1] }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // prompt dialog
-        let code = Js::__code("return prompt({},{})", &[Str("a".into()), Str("b".into())]);
+        let code = Js::__code("return prompt({},{})", &["a".into(), "b".into()]);
         let expected_code = "function(p0,p1){ return prompt(p0,p1) }";
         assert_eq!(cs(&code), cs(&expected_code));
 
@@ -272,22 +283,22 @@ mod tests {
         assert_eq!(cs(&code), cs(&expected_code));
 
         // get property
-        let code = Js::__code("return {}[{}]", &[Ref(ObjectRef(0)), Str("a".into())]);
+        let code = Js::__code("return {}[{}]", &[ObjectRef(0).into(), "a".into()]);
         let expected_code = "function(p0,p1){ return p0[p1] }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // query selector
-        let code = Js::__code("return document.querySelector({})", &[Str("a".into())]);
+        let code = Js::__code("return document.querySelector({})", &["a".into()]);
         let expected_code = "function(p0){ return document.querySelector(p0) }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // create element
-        let code = Js::__code("return document.createElement({})", &[Str("a".into())]);
+        let code = Js::__code("return document.createElement({})", &["a".into()]);
         let expected_code = "function(p0){ return document.createElement(p0) }";
         assert_eq!(cs(&code), cs(&expected_code));
 
         // create text node
-        let code = Js::__code("return document.createTextNode({})", &[Str("a".into())]);
+        let code = Js::__code("return document.createTextNode({})", &["a".into()]);
         let expected_code = "function(p0){ return document.createTextNode(p0) }";
         assert_eq!(cs(&code), cs(&expected_code));
 

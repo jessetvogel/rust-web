@@ -5,8 +5,6 @@ use std::collections::HashMap;
 use crate::invoke::{Js, ObjectRef};
 use crate::element::El;
 
-use crate::invoke::JsValue::*;
-
 #[derive(Debug, Clone)]
 pub struct Page { pub path: String, pub element: El, pub title: Option<String> }
 
@@ -21,7 +19,7 @@ pub struct Router { pub root: Option<ObjectRef>, pub pages: HashMap::<String, Pa
 
 impl Router {
     pub fn new(root: &str, pages: &[Page]) -> Self {
-        let body = Js::invoke("return document.querySelector({})", &[Str(root.into())]).to_ref().unwrap();
+        let body = Js::invoke("return document.querySelector({})", &[root.into()]).to_ref().unwrap();
         let pathname = Js::invoke("return window.location.pathname", &[]).to_str().unwrap();
         let page = pages.iter().find(|&s| *s.path == pathname).unwrap_or(&pages[0]);
         page.element.mount(&body);
@@ -42,7 +40,7 @@ impl Router {
 
         // set html
         let body = self.root.as_ref().unwrap();
-        Js::invoke("{}.innerHTML = {}", &[Ref(*body), Str("".into())]);
+        Js::invoke("{}.innerHTML = {}", &[body.into(), "".into()]);
 
         // mount new page
         let page = self.pages.get(route).unwrap();
@@ -50,7 +48,7 @@ impl Router {
 
         // push state
         let page_str = page.title.to_owned().unwrap_or_default();
-        Js::invoke("window.history.pushState({ },{},{})", &[Str(page_str.into()), Str(route.into())]);
+        Js::invoke("window.history.pushState({ },{},{})", &[page_str.into(), route.into()]);
 
     }
 }

@@ -26,9 +26,9 @@ async fn fetch_json(method: &str, url: &str, body: Option<JsonValue>) -> Result<
         const options = { method: {}, headers: { 'Content-Type': 'application/json' }, body: p0 !== 'GET' ? {} : null };
         fetch({}, options).then(r => r.json()).then(r => { {}(r) })
     "#;
-    Js::invoke(request, &[Str(method.into()), Str(body), Str(url.into()), Ref(callback_ref)]);
+    Js::invoke(request, &[method.into(), body.into(), url.into(), callback_ref.into()]);
     let object_id = future.await;
-    let result = Js::invoke("return JSON.stringify(objects[{}])", &[Number(*object_id as f64)]).to_str().unwrap();
+    let result = Js::invoke("return JSON.stringify(objects[{}])", &[object_id.into()]).to_str().unwrap();
     json::parse(&result).map_err(|_| "Parse error".to_owned())
 }
 
@@ -50,11 +50,11 @@ fn page1() -> El {
         .on_mount(move |_| {
 
             // add listener
-            let body = Js::invoke("return document.querySelector({})", &[Str("body".into())]).to_ref().unwrap();
+            let body = Js::invoke("return document.querySelector({})", &["body".into()]).to_ref().unwrap();
             let signal_key_clone = signal_key_clone.clone();
 
             El::from(&body).on_event("keydown", move |e| {
-                let key_code = Js::invoke("return {}[{}]", &[Ref(e), Str("keyCode".into())]).to_num().unwrap();
+                let key_code = Js::invoke("return {}[{}]", &[e.into(), "keyCode".into()]).to_num().unwrap();
                 let key_name = keycodes::KEYBOARD_MAP[key_code as usize];
                 let text = format!("Pressed: {}", key_name);
                 signal_key_clone.set(text);
@@ -65,9 +65,9 @@ fn page1() -> El {
             Runtime::block_on(async move {
                 loop {
                     signal_time_clone.set("⏰ tik");
-                    promise("window.setTimeout({},{})", move |c| vec![Ref(c), Number(1_000.into())]).await;
+                    promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
                     signal_time_clone.set("⏰ tok");
-                    promise("window.setTimeout({},{})", move |c| vec![Ref(c), Number(1_000.into())]).await;
+                    promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
                 }
             });
 
@@ -78,7 +78,7 @@ fn page1() -> El {
                 let url = format!("https://pokeapi.co/api/v2/pokemon/{}", 1);
                 let result = fetch_json("GET", &url, None).await.unwrap();
                 let name = result["name"].as_str().unwrap();
-                Js::invoke("alert({})", &[Str(name.into())]);
+                Js::invoke("alert({})", &[name.into()]);
             });
         }))
         .child(El::new("button").text("page 2").classes(&BUTTON_CLASSES).on_event("click", move |_| {
@@ -91,15 +91,15 @@ fn page1() -> El {
         }))
         .child(El::new("div").text("0").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(el_clone.element), Str(v.to_string())]); });
+            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el_clone.element.into(), v.to_string().into()]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(el_clone.element), Str(v.into())]); });
+            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el_clone.element.into(), v.into()]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(el_clone.element), Str(v.into())]); });
+            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el_clone.element.into(), v.into()]); });
         }))
 }
 
@@ -114,7 +114,7 @@ fn page2() -> El {
 #[no_mangle]
 pub fn main() {
 
-    std::panic::set_hook(Box::new(|e| { Js::invoke("console.log({})", &[Str(e.to_string())]); }));
+    std::panic::set_hook(Box::new(|e| { Js::invoke("console.log({})", &[e.to_string().into()]); }));
 
     // init router
     let pages = &[Page::new("/page1", page1(), None), Page::new("/page2", page2(), None)];

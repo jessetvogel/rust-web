@@ -12,8 +12,6 @@ use std::{
 use crate::callbacks::create_callback;
 use crate::invoke::Js;
 
-use crate::invoke::JsValue::*;
-
 thread_local! {
     static STATE_MAP: RefCell<HashMap<u32, Box<dyn Any>>> = Default::default(); // Cast: Arc<Mutex<RuntimeState<T>>>
 }
@@ -89,7 +87,7 @@ impl<T: 'static> Runtime<T> {
         fn wake_fn<T: 'static>(ptr: *const ()) {
             let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };
             let function_ref = create_callback(move |_| { Runtime::poll(&_task); });
-            Js::invoke("window.setTimeout({},0)", &[Ref(function_ref)]);
+            Js::invoke("window.setTimeout({},0)", &[function_ref.into()]);
         }
         fn drop_fn<T>(ptr: *const ()) {
             let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };
