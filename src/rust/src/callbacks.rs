@@ -24,20 +24,9 @@ pub fn create_callback(mut handler: impl FnMut(ObjectRef) + 'static) -> ObjectRe
     "#;
     let object_id = Js::invoke(code, &[]).to_num().unwrap();
     let function_ref = ObjectRef::new(object_id as u32);
-    insert_callback(function_ref, move |value| { handler(value); });
-    function_ref
-}
-
-pub fn create_future_callback(future_id: u32) -> ObjectRef {
-    Js::invoke("return () => { wasmModule.instance.exports.handle_future_callback({}); }", &[Number(future_id as f64)]).to_ref().unwrap()
-}
-
-pub fn insert_callback(function_ref: ObjectRef, cb: impl FnMut(ObjectRef) + 'static) {
+    let cb = move |value| { handler(value); };
     CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.insert(function_ref.clone(), Box::new(cb)); }).unwrap(); });
-}
-
-pub fn remove_callback(function_ref: ObjectRef) {
-    CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.remove(&function_ref); }).unwrap(); });
+    function_ref
 }
 
 #[no_mangle]
@@ -53,6 +42,10 @@ pub fn handle_callback(callback_id: u32, param: i32) {
     });
 
     Js::deallocate(object_ref);
+}
+
+pub fn create_future_callback(future_id: u32) -> ObjectRef {
+    Js::invoke("return () => { wasmModule.instance.exports.handle_future_callback({}); }", &[Number(future_id as f64)]).to_ref().unwrap()
 }
 
 #[no_mangle]
@@ -76,14 +69,15 @@ mod tests {
         // add listener
         let has_run = Rc::new(RefCell::new(false));
         let has_run_clone = has_run.clone();
-        insert_callback(function_ref, move |_| { *has_run_clone.borrow_mut() = true; });
+        let cb = move |_| { *has_run_clone.borrow_mut() = true; };
+        CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.insert(function_ref.clone(), Box::new(cb)); }).unwrap(); });
 
         // call listener
         handle_callback(*function_ref, 0);
         assert_eq!(*has_run.borrow(), true);
 
         // remove listener
-        remove_callback(function_ref);
+        CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.remove(&function_ref); }).unwrap(); });
         let count = CALLBACK_HANDLERS.with(|s| s.lock().map(|s| s.len()).unwrap());
         assert_eq!(count, 0);
     }
