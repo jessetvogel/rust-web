@@ -79,12 +79,6 @@ Every time a rust function wants to invoke a browser API it uses the [__invoke](
 
 # How to's & guides
 
-### Index html
-
-
-
-Check it out [here](https://github.com/LiveDuo/tinyweb-starter/blob/master/public/index.html)
-
 ### Reactivity and Signals
 
 ```rs
@@ -121,6 +115,11 @@ thread_local! {
     pub static ROUTER: RefCell<Router> = RefCell::new(Router::default());
 }
 
+// initialize router
+let pages = &[Page::new("/tasks", tasks_page(), None)];
+ROUTER.with(|s| { *s.borrow_mut() = Router::new("body", pages); });
+
+// navigate to route
 ROUTER.with(|s| { s.borrow().navigate("page1"); });
 ```
 
@@ -129,18 +128,16 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 ### Async Support
 
 ```rs
-use tinyweb::http::{fetch, FetchResponse, FetchOptions};
 use tinyweb::runtime::Runtime;
 use tinyweb::invoke::Js;
 
 Runtime::block_on(async move {
-    let url = "https://pokeapi.co/api/v2/pokemon/1";
-    let fetch_options = FetchOptions { method: HttpMethod::GET, url, ..Default::default()};
-    let result = fetch(fetch_options).await;
-    let result_text = match fetch_res { FetchResponse::Text(_, d) => Ok(d), _ => Err(()), };
-    let result_json = json::parse(&result_text.unwrap()).unwrap();
-    let name = result_json["name"].as_str().unwrap();
-    Js::invoke("alert({})", &[Str(&name.to_owned())]);
+
+    let (cb, future) = create_async_callback();
+    Js::invoke("setTimeout({}, 1000)", &[Str(method.into()), Str(body), Str(url.into()), Ref(cb)]);
+    future.await;
+
+    Js::invoke("alert('timer')");
 });
 ```
 
@@ -148,21 +145,16 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 
 # Backstory
 
-For quite some time, I've been torn about typescript.
+For quite some time, I've been torn about typescript. It brings stronger typing to javascript making me more confident about the code but it comes with a heavy build system that makes debugging a lot more complex.
 
-One on hand, it brings stronger typing to javascript improving correctness.
+At some point I had to build a new application that I really cared that correctness and realized how much I don't trust typescript even for what's design to do.
 
-One the other hand, it comes with a heavy build system with heavy cost on simplicity.
+I then tried different wasm based frameworks like Leptos and Yew. These crates were great at correctness and I was confident about the result but the come with a cost. Each requires hundereds of dependencies just to get started. For reference, leptos development tool `cargo-leptos` depends on other 485 crates and `leptos` itself on 231 more.
 
-While undecided, I had to build something that really relied on correctness, a financial application, and realized that how much I don't trust typescript even for what's design to do.
+When I digged into it more, I realised that these dependencies come from `wasm-bindgen`. The `wasm-bindgen` crate is the standard in developing client side code with Rust and is maintained by [The Rust and WebAssembly Working Group](https://rustwasm.github.io), the group that's maintaining webassembly itself.
 
-I then tried different wasm based frameworks like Leptos and Yew. These were great at correctness, I was confident that my code would work but they require hundereds of dependencies just to get started. At that point I digged into it more and realised that these dependencies come from `wasm-bindgen`.
-
-The `wasm-bindgen` crate is great, it's the standard in developing client side code with Rust and wasm and is maintained by [The Rust and WebAssembly Working Group](https://rustwasm.github.io). The crate focuses on performance and has bindings for most browser APIs but that came at a cost through the number of dependencies it requires. For reference, leptos development tool `cargo-leptos` depends on other 485 crates and `leptos` itself on 231 more.
-
-So, I setup out to build a web framework that aims for both simplicity and correctness, one that's based on Rust but has no dependencies.
-
+So, I setup out to build a web framework that allows to build client side applications with Rust but it's still simple and `tinyweb` is the result. A client side Rust framework build in <800 lines of code.
 
 # Credits
 
-Credits to [Richard Anaya](https://github.com/richardanaya) for his work on [web.rs](https://github.com/richardanaya/web.rs) that provided solutions to some practical challenges in this library especially his work on [async support](https://github.com/richardanaya/web.rs/blob/master/crates/web/src/executor.rs). Also, to [Greg Johnston](https://github.com/gbj) for [his videos](https://www.youtube.com/@gbjxc/videos) that made working with signals in Rust easy.
+Credits to [Richard Anaya](https://github.com/richardanaya) for his work on [web.rs](https://github.com/richardanaya/web.rs) that provided ideas to practical challenges on [async support](https://github.com/richardanaya/web.rs/blob/master/crates/web/src/executor.rs). Also, to [Greg Johnston](https://github.com/gbj) for [his videos](https://www.youtube.com/@gbjxc/videos) that show how to use Solid.js-like signals in Rust.
