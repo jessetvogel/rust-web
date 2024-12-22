@@ -1,8 +1,9 @@
 
 use crate::runtime::RuntimeFuture;
-use crate::invoke::{Js, ObjectRef};
+use crate::invoke::{Js, JsValue, ObjectRef};
 
 use std::collections::HashMap;
+use std::future::Future;
 use std::sync::Mutex;
 
 thread_local! {
@@ -47,6 +48,12 @@ pub fn create_async_callback() -> (ObjectRef, RuntimeFuture<ObjectRef>) {
     let future_id = future.id();
     let callback_ref = create_callback(move |e| { RuntimeFuture::wake(future_id, e); });
     return (callback_ref, future);
+}
+
+pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue> + 'static>(code: &str, params_fn: F) -> impl Future<Output = ObjectRef> {
+    let (callback_ref, future) = create_async_callback();
+    Js::invoke(code, &params_fn(callback_ref));
+    future
 }
 
 #[cfg(test)]

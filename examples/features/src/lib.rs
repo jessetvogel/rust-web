@@ -2,12 +2,11 @@
 mod keycodes;
 
 use std::collections::HashMap;
-use std::future::Future;
 use std::cell::RefCell;
 
 use json::JsonValue;
 
-use tinyweb::callbacks::create_async_callback;
+use tinyweb::callbacks::{create_async_callback, promise};
 use tinyweb::router::{Page, Router};
 use tinyweb::runtime::Runtime;
 use tinyweb::signals::Signal;
@@ -32,12 +31,6 @@ async fn fetch_json(method: &str, url: &str, body: Option<JsonValue>) -> Result<
     let object_id = future.await;
     let result = Js::invoke("return JSON.stringify(objects[{}])", &[Number(*object_id as f64)]).to_str().unwrap();
     json::parse(&result).map_err(|_| "Parse error".to_owned())
-}
-
-pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue> + 'static>(code: &str, params_fn: F) -> impl Future<Output = ObjectRef> {
-    let (callback_ref, future) = create_async_callback();
-    Js::invoke(code, &params_fn(callback_ref));
-    future
 }
 
 fn page1() -> El {
