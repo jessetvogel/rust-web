@@ -29,7 +29,7 @@ pub fn create_callback(mut handler: impl FnMut(ObjectRef) + 'static) -> ObjectRe
 }
 
 pub fn create_future_callback(future_id: u32) -> ObjectRef {
-    Js::invoke("return () => { wasmModule.instance.exports.handle_callback({},-1); }", &[Number(future_id as f64)]).to_ref().unwrap()
+    Js::invoke("return () => { wasmModule.instance.exports.handle_future_callback({}); }", &[Number(future_id as f64)]).to_ref().unwrap()
 }
 
 pub fn insert_callback(function_ref: ObjectRef, cb: impl FnMut(Option<ObjectRef>) + 'static) {
@@ -46,24 +46,23 @@ pub fn cleanup_callback(function_ref: ObjectRef) {
 }
 
 #[no_mangle]
+pub fn handle_future_callback(callback_id: u32) {
+    RuntimeFuture::wake(callback_id, ());
+}
+
+#[no_mangle]
 pub fn handle_callback(callback_id: u32, param: i32) {
 
-    let object_ref = match param {
-        n if n >= 0 => { Some(ObjectRef::new(param as u32)) }
-        -1 => { RuntimeFuture::wake(callback_id, ()); return; }
-        _ => { panic!("Invalid value") }
-    };
+    let object_ref = ObjectRef::new(param as u32);
 
     CALLBACK_HANDLERS.with(|s| {
         let handler = s.lock().map(|mut s| {
             s.get_mut(&ObjectRef::new(callback_id)).unwrap() as *mut Box<dyn FnMut(_) + 'static>
         }).unwrap();
-        unsafe { (*handler)(object_ref) }
+        unsafe { (*handler)(Some(object_ref)) }
     });
 
-    if let Some(object_ref) = object_ref {
-        Js::deallocate(object_ref);
-    }
+    Js::deallocate(object_ref);
 }
 
 #[no_mangle]
@@ -90,7 +89,7 @@ mod tests {
         insert_callback(function_ref, move |_| { *has_run_clone.borrow_mut() = true; });
 
         // call listener
-        handle_callback(*function_ref, -1);
+        handle_callback(*function_ref, 0);
         assert_eq!(*has_run.borrow(), true);
 
         // remove listener
