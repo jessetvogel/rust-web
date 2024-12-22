@@ -7,9 +7,9 @@ use std::cell::RefCell;
 
 use json::JsonValue;
 
-use tinyweb::callbacks::create_future_callback;
-use tinyweb::runtime::{Runtime, RuntimeFuture};
+use tinyweb::callbacks::create_async_callback;
 use tinyweb::router::{Page, Router};
+use tinyweb::runtime::Runtime;
 use tinyweb::signals::Signal;
 use tinyweb::element::El;
 
@@ -23,7 +23,7 @@ thread_local! {
 
 async fn fetch_json(method: &str, url: &str, body: Option<JsonValue>) -> JsonValue {
     let body = body.map(|s| s.dump()).unwrap_or_default();
-    let (callback_ref, future) = tinyweb::callbacks::create_async_callback();
+    let (callback_ref, future) = create_async_callback();
     let request = r#"
         const options = { method: {}, headers: { 'Content-Type': 'application/json', data: {} } };
         fetch({}, options).then(r => r.json()).then(r => { {}(r) })
@@ -34,9 +34,8 @@ async fn fetch_json(method: &str, url: &str, body: Option<JsonValue>) -> JsonVal
     json::parse(&result).unwrap()
 }
 
-pub fn sleep(ms: f64) -> impl Future<Output = ()> {
-    let future = RuntimeFuture::new();
-    let callback_ref = create_future_callback(future.id());
+pub fn sleep(ms: f64) -> impl Future<Output = ObjectRef> {
+    let (callback_ref, future) = create_async_callback();
     Js::invoke("window.setTimeout({},{})", &[Ref(callback_ref), Number(ms)]);
     future
 }
