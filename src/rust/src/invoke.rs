@@ -51,8 +51,10 @@ impl From<u32> for JsValue { fn from(n: u32) -> Self { Self::Number(n as f64) } 
 impl From<u64> for JsValue { fn from(n: u64) -> Self { Self::Number(n as f64) } }
 impl From<i32> for JsValue { fn from(n: i32) -> Self { Self::Number(n as f64) } }
 impl From<i64> for JsValue { fn from(n: i64) -> Self { Self::Number(n as f64) } }
+impl From<bool> for JsValue { fn from(n: bool) -> Self { Self::Bool(n) } }
 impl From<ObjectRef> for JsValue { fn from(s: ObjectRef) -> Self { Self::Ref(s) } }
 impl From<&ObjectRef> for JsValue { fn from(s: &ObjectRef) -> Self { Self::Ref(s.to_owned()) } }
+impl From<Vec<u8>> for JsValue { fn from(s: Vec<u8>) -> Self { Self::Buffer(s) } }
 
 // pub use JsValue::*;
 
