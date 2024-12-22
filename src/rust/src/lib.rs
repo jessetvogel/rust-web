@@ -4,7 +4,6 @@ pub mod allocations;
 pub mod runtime;
 pub mod invoke;
 
-pub mod http;
 pub mod signals;
 pub mod element;
 pub mod router;
