@@ -1,5 +1,5 @@
 
-use tinyweb::callbacks::{create_callback, create_future_callback};
+use tinyweb::callbacks::{create_async_callback, create_callback, create_future_callback};
 use tinyweb::runtime::{Runtime, RuntimeFuture};
 use tinyweb::invoke::*;
 
@@ -26,12 +26,10 @@ pub fn main() {
 
     // invoke async callback
     let url = "https://pokeapi.co/api/v2/pokemon/1";
-    let fetch_future = RuntimeFuture::<ObjectRef>::new();
-    let future_id = fetch_future.id();
-    let callback_ref = create_callback(move |e| { RuntimeFuture::wake(future_id, e); });
+    let (callback_ref, future) = create_async_callback();
     Js::invoke("fetch({}).then(r => r.json()).then(r => { {}(r) })", &[Str(url.into()), Ref(callback_ref)]);
     Runtime::block_on(async move {
-        let object_id = fetch_future.await;
+        let object_id = future.await;
         let result = Js::invoke("return objects[{}].name", &[Number(*object_id as f64)]).to_str().unwrap();
         Js::invoke("console.log('invoke fetch', {})", &[Str(result)]);
     });
