@@ -40,16 +40,6 @@ pub fn remove_callback(function_ref: ObjectRef) {
     CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.remove(&function_ref); }).unwrap(); });
 }
 
-pub fn cleanup_callback(function_ref: ObjectRef) {
-    remove_callback(function_ref);
-    Js::deallocate(function_ref);
-}
-
-#[no_mangle]
-pub fn handle_future_callback(callback_id: u32) {
-    RuntimeFuture::wake(callback_id, ());
-}
-
 #[no_mangle]
 pub fn handle_callback(callback_id: u32, param: i32) {
 
@@ -63,6 +53,11 @@ pub fn handle_callback(callback_id: u32, param: i32) {
     });
 
     Js::deallocate(object_ref);
+}
+
+#[no_mangle]
+pub fn handle_future_callback(callback_id: u32) {
+    RuntimeFuture::wake(callback_id, ());
 }
 
 #[cfg(test)]
