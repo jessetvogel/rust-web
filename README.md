@@ -132,7 +132,7 @@ use tinyweb::invoke::Js;
 Runtime::block_on(async move {
 
     let (cb, future) = create_async_callback();
-    Js::invoke("setTimeout({}, 1000)", &[Ref(cb)]);
+    Js::invoke("setTimeout({}, 1000)", &[cb.into()]);
     future.await;
 
     Js::invoke("alert('timer')");
