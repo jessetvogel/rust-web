@@ -21,7 +21,7 @@ thread_local! {
     pub static ROUTER: RefCell<Router> = RefCell::new(Router::default());
 }
 
-async fn fetch_json(method: &str, url: &str, body: Option<JsonValue>) -> JsonValue {
+async fn fetch_json(method: &str, url: &str, body: Option<JsonValue>) -> Result<JsonValue, String> {
     let body = body.map(|s| s.dump()).unwrap_or_default();
     let (callback_ref, future) = create_async_callback();
     let request = r#"
@@ -31,12 +31,12 @@ async fn fetch_json(method: &str, url: &str, body: Option<JsonValue>) -> JsonVal
     Js::invoke(request, &[Str(method.into()), Str(body), Str(url.into()), Ref(callback_ref)]);
     let object_id = future.await;
     let result = Js::invoke("return JSON.stringify(objects[{}])", &[Number(*object_id as f64)]).to_str().unwrap();
-    json::parse(&result).unwrap()
+    json::parse(&result).map_err(|_| "Parse error".to_owned())
 }
 
-pub fn sleep(ms: f64) -> impl Future<Output = ObjectRef> {
+pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue> + 'static>(code: &str, params_fn: F) -> impl Future<Output = ObjectRef> {
     let (callback_ref, future) = create_async_callback();
-    Js::invoke("window.setTimeout({},{})", &[Ref(callback_ref), Number(ms)]);
+    Js::invoke(code, &params_fn(callback_ref));
     future
 }
 
@@ -73,9 +73,9 @@ fn page1() -> El {
             Runtime::block_on(async move {
                 loop {
                     signal_time_clone.set("⏰ tik");
-                    sleep(1_000.into()).await;
+                    promise("window.setTimeout({},{})", move |c| vec![Ref(c), Number(1_000.into())]).await;
                     signal_time_clone.set("⏰ tok");
-                    sleep(1_000.into()).await;
+                    promise("window.setTimeout({},{})", move |c| vec![Ref(c), Number(1_000.into())]).await;
                 }
             });
 
@@ -84,7 +84,7 @@ fn page1() -> El {
         .child(El::new("button").text("api").classes(&BUTTON_CLASSES).on_event("click", |_| {
             Runtime::block_on(async move {
                 let url = format!("https://pokeapi.co/api/v2/pokemon/{}", 1);
-                let result = fetch_json("GET", &url, None).await;
+                let result = fetch_json("GET", &url, None).await.unwrap();
                 let name = result["name"].as_str().unwrap();
                 Js::invoke("alert({})", &[Str(name.into())]);
             });
