@@ -26,14 +26,13 @@ pub fn main() {
 
     // invoke async callback
     let url = "https://pokeapi.co/api/v2/pokemon/1";
-    let future = RuntimeFuture::<String>::new();
-    let future_id = future.id();
-    let callback_ref = create_callback(move |e| {
-        let result = Js::invoke("return objects[{}].name", &[Number(*e as f64)]).to_str().unwrap();
-        RuntimeFuture::wake(future_id, result);
-    });
+    let fetch_future = RuntimeFuture::<ObjectRef>::new();
+    let future_id = fetch_future.id();
+    let callback_ref = create_callback(move |e| { RuntimeFuture::wake(future_id, e); });
     Js::invoke("fetch({}).then(r => r.json()).then(r => { {}(r) })", &[Str(url.into()), Ref(callback_ref)]);
     Runtime::block_on(async move {
-        Js::invoke("console.log('invoke fetch', {})", &[Str(future.await)]);
+        let object_id = fetch_future.await;
+        let result = Js::invoke("return objects[{}].name", &[Number(*object_id as f64)]).to_str().unwrap();
+        Js::invoke("console.log('invoke fetch', {})", &[Str(result)]);
     });
 }
