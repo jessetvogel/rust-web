@@ -62,7 +62,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_handler() {
+    fn test_callback() {
 
         // add listener
         let has_run = Rc::new(RefCell::new(false));
@@ -73,6 +73,24 @@ mod tests {
         let function_ref = ObjectRef::new(0);
         handle_callback(*function_ref, 0);
         assert_eq!(*has_run.borrow(), true);
+
+        // remove listener
+        CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.remove(&function_ref); }).unwrap(); });
+        let count = CALLBACK_HANDLERS.with(|s| s.lock().map(|s| s.len()).unwrap());
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn test_future_callback() {
+
+        // add listener
+        let future = RuntimeFuture::<()>::new();
+        create_future_callback(future.id());
+
+        // simulate callback
+        let function_ref = ObjectRef::new(0);
+        handle_future_callback(*function_ref);
+        crate::runtime::Runtime::block_on(async move { future.await; });
 
         // remove listener
         CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.remove(&function_ref); }).unwrap(); });
