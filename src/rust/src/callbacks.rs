@@ -2,8 +2,6 @@
 use crate::runtime::RuntimeFuture;
 use crate::invoke::{Js, ObjectRef};
 
-use crate::invoke::JsValue::*;
-
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -44,16 +42,6 @@ pub fn handle_callback(callback_id: u32, param: i32) {
     Js::deallocate(object_ref);
 }
 
-pub fn create_future_callback(future_id: u32) -> ObjectRef {
-    Js::invoke("return () => { wasmModule.instance.exports.handle_future_callback({}); }", &[Number(future_id as f64)]).to_ref().unwrap()
-}
-
-#[no_mangle]
-pub fn handle_future_callback(callback_id: u32) {
-    RuntimeFuture::wake(callback_id, ());
-}
-
-
 pub fn create_async_callback() -> (ObjectRef, RuntimeFuture<ObjectRef>) {
     let future = RuntimeFuture::<ObjectRef>::new();
     let future_id = future.id();
@@ -92,12 +80,10 @@ mod tests {
     fn test_future_callback() {
 
         // add listener
-        let future = RuntimeFuture::<()>::new();
-        create_future_callback(future.id());
+        let (function_ref, future) = create_async_callback();
 
         // simulate callback
-        let function_ref = ObjectRef::new(0);
-        handle_future_callback(*function_ref);
+        handle_callback(*function_ref, 0);
         crate::runtime::Runtime::block_on(async move { future.await; });
 
         // remove listener
