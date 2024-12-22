@@ -65,11 +65,6 @@ pub fn handle_callback(callback_id: u32, param: i32) {
     Js::deallocate(object_ref);
 }
 
-#[no_mangle]
-pub fn handle_empty_callback(callback_id: u32, _allocation_id: u32) {
-    RuntimeFuture::wake(callback_id, ());
-}
-
 #[cfg(test)]
 mod tests {
 
