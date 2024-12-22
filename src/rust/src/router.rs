@@ -7,13 +7,32 @@ use crate::element::El;
 
 use crate::invoke::JsValue::*;
 
-#[derive(Debug)]
-pub struct Page { pub element: El, pub title: Option<String> }
+#[derive(Debug, Clone)]
+pub struct Page { pub path: String, pub element: El, pub title: Option<String> }
+
+impl Page {
+    pub fn new(path: &str, element: El, title: Option<String>) -> Self {
+        Self { path: path.to_owned(), element, title }
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct Router { pub root: Option<ObjectRef>, pub pages: HashMap::<String, Page> }
 
 impl Router {
+    pub fn new(root: &str, pages: &[Page]) -> Self {
+        let body = Js::invoke("return document.querySelector({})", &[Str(root.into())]).to_ref().unwrap();
+        let pathname = Js::invoke("return window.location.pathname", &[]).to_str().unwrap();
+        let page = pages.iter().find(|&s| *s.path == pathname).unwrap_or(&pages[0]);
+        page.element.mount(&body);
+
+        let mut default_page = pages.first().cloned().unwrap();
+        default_page.path = "/".to_owned();
+
+        let mut pages = pages.iter().map(|p| (p.path.clone(), p.to_owned())).collect::<Vec<_>>();
+        pages.push((default_page.path.clone(), default_page.to_owned()));
+        Self { pages: HashMap::from_iter(pages), root: Some(body) }
+    }
     pub fn navigate(&self, route: &str) {
 
         // unmount page

@@ -1,7 +1,6 @@
 
 mod keycodes;
 
-use std::collections::HashMap;
 use std::cell::RefCell;
 
 use json::JsonValue;
@@ -117,22 +116,7 @@ pub fn main() {
 
     std::panic::set_hook(Box::new(|e| { Js::invoke("console.log({})", &[Str(e.to_string())]); }));
 
-    // get pages
-    let pages = [
-        ("/page1".to_owned(), Page { element: page1(), title: None }),
-        ("/page2".to_owned(), Page { element: page2(), title: None }),
-        ("/".to_owned(), Page { element: page1(), title: None })
-    ];
-
-    // load page
-    let body = Js::invoke("return document.querySelector({})", &[Str("body".into())]).to_ref().unwrap();
-    let pathname = Js::invoke("return window.location.pathname", &[]).to_str().unwrap();
-    let (_, page) = pages.iter().find(|&(s, _)| *s == pathname).unwrap_or(&pages[0]);
-    page.element.mount(&body);
-
     // init router
-    ROUTER.with(|s| {
-        *s.borrow_mut() = Router { pages: HashMap::from_iter(pages), root: Some(body) };
-    });
-
+    let pages = &[Page::new("/page1", page1(), None), Page::new("/page2", page2(), None)];
+    ROUTER.with(|s| { *s.borrow_mut() = Router::new("body", pages); });
 }
