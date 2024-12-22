@@ -64,14 +64,13 @@ mod tests {
     #[test]
     fn test_handler() {
 
-        let function_ref = ObjectRef::new(0);
-
         // add listener
         let has_run = Rc::new(RefCell::new(false));
         let has_run_clone = has_run.clone();
         create_callback(move |_| { *has_run_clone.borrow_mut() = true; });
 
-        // call listener
+        // simulate callback
+        let function_ref = ObjectRef::new(0);
         handle_callback(*function_ref, 0);
         assert_eq!(*has_run.borrow(), true);
 
