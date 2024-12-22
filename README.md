@@ -1,14 +1,14 @@
 # TinyWeb 🌱 Rust on the client. No dependencies.
 
-Build the client-side with Rust. Combine it with any http framework to build fullstack applications!
+Build the client-side with Rust. Combine it with any http framework to build fullstack applications in canonical Rust!
 
 # What's TinyWeb?
 
 TinyWeb is a toolkit to build web applications that care about simplicity and correctness.
 
-Aims to solve robustness by using Rust's strict type system, zero-cost abstractions and great built-in tooling.
+- It allows client side application to be build with canonical Rust utilizing its strict type system, zero-cost abstractions and great built-in tooling.
 
-Aims to sove simplicity with its tiny footprint (< 800 lines of Rust) and by having no build step and no external dependencies.
+- Has a tiny footprint of less than 800 lines of code, has no build step and no external dependencies.
 
 # Features
 
@@ -79,6 +79,16 @@ Every time a rust function wants to invoke a browser API it uses the [__invoke](
 
 # How to's & guides
 
+### Browser APIs
+
+```rs
+use tinyweb::invoke::Js;
+
+Js::invoke("alert('hello browser')", &[]);
+```
+
+Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L87)
+
 ### Reactivity and Signals
 
 ```rs
@@ -96,16 +106,6 @@ El::new("button").text("add").on_event("click", move |_| {
 
 Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L94)
 
-### Browser APIs
-
-```rs
-use tinyweb::invoke::Js;
-
-Js::invoke("alert('hello browser')", &[]);
-```
-
-Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L87)
-
 ### Router support
 
 ```rs
@@ -120,7 +120,7 @@ let pages = &[Page::new("/tasks", tasks_page(), None)];
 ROUTER.with(|s| { *s.borrow_mut() = Router::new("body", pages); });
 
 // navigate to route
-ROUTER.with(|s| { s.borrow().navigate("page1"); });
+ROUTER.with(|s| { s.borrow().navigate("/page1"); });
 ```
 
 Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L21)
@@ -134,7 +134,7 @@ use tinyweb::invoke::Js;
 Runtime::block_on(async move {
 
     let (cb, future) = create_async_callback();
-    Js::invoke("setTimeout({}, 1000)", &[Str(method.into()), Str(body), Str(url.into()), Ref(cb)]);
+    Js::invoke("setTimeout({}, 1000)", &[Ref(cb)]);
     future.await;
 
     Js::invoke("alert('timer')");
@@ -153,7 +153,7 @@ I then tried different wasm based frameworks like Leptos and Yew. These crates w
 
 When I digged into it more, I realised that these dependencies come from `wasm-bindgen`. The `wasm-bindgen` crate is the standard in developing client side code with Rust and is maintained by [The Rust and WebAssembly Working Group](https://rustwasm.github.io), the group that's maintaining webassembly itself.
 
-So, I setup out to build a web framework that allows to build client side applications with Rust but it's still simple and `tinyweb` is the result. A client side Rust framework build in <800 lines of code.
+So, I setup out to build a web framework that allows to build client side applications with Rust but it's still simple and `tinyweb` is the result. A client side Rust framework built in <800 lines of code.
 
 # Credits
 
