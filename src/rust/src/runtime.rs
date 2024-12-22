@@ -9,7 +9,7 @@ use std::{
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker}
 };
 
-use crate::handlers::create_callback;
+use crate::callbacks::create_callback;
 use crate::invoke::Js;
 
 use crate::invoke::JsValue::*;

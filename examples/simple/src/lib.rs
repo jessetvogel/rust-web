@@ -1,5 +1,5 @@
 
-use tinyweb::handlers::create_callback;
+use tinyweb::callbacks::create_callback;
 use tinyweb::invoke::*;
 
 pub fn add_click_event_listener(element: &ObjectRef, handler: impl FnMut(ObjectRef) + 'static) -> ObjectRef {

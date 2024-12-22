@@ -22,7 +22,7 @@ impl El {
     pub fn unmount(&self) {
         let mut c = self.callbacks.borrow_mut();
         c.iter().for_each(|p| {
-            crate::handlers::CALLBACK_HANDLERS.with(|s| {
+            crate::callbacks::CALLBACK_HANDLERS.with(|s| {
                 s.lock().map(|mut h| { let _ = h.remove(p).unwrap(); }).unwrap();
             });
         });
@@ -59,7 +59,7 @@ impl El {
     }
     pub fn on_event(self, event: &str, cb: impl FnMut(ObjectRef) + 'static) -> Self {
 
-        let function_ref = crate::handlers::create_callback(cb);
+        let function_ref = crate::callbacks::create_callback(cb);
         let code = &format!("{{}}.addEventListener('{}',{{}})", event);
         Js::invoke(code, &[Ref(self.element), Ref(function_ref)]);
 

@@ -1,5 +1,5 @@
 
-use crate::handlers::create_callback;
+use crate::callbacks::create_callback;
 use crate::runtime::RuntimeFuture;
 use crate::invoke::Js;
 

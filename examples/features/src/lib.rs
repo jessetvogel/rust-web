@@ -7,7 +7,7 @@ use std::cell::RefCell;
 
 use json::JsonValue;
 
-use tinyweb::handlers::create_future_callback;
+use tinyweb::callbacks::create_future_callback;
 use tinyweb::runtime::{Runtime, RuntimeFuture};
 use tinyweb::router::{Page, Router};
 use tinyweb::signals::Signal;
