@@ -1,7 +1,7 @@
 build:
 	cargo build --target wasm32-unknown-unknown -r
 	mkdir -p /tmp/public
-	cp ../../target/wasm32-unknown-unknown/release/simple.wasm /tmp/public/simple.wasm
+	cp ../../target/wasm32-unknown-unknown/release/callbacks.wasm /tmp/public/callbacks.wasm
 	cp ../../src/js/main.js /tmp/public/main.js
 	cp public/index.html /tmp/public/index.html
 start:

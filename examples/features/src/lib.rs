@@ -1,19 +1,16 @@
 
 mod keycodes;
 
-use std::collections::HashMap;
-use std::future::Future;
 use std::cell::RefCell;
 
 use json::JsonValue;
 
-use tinyweb::handlers::create_future_callback;
-use tinyweb::runtime::{Runtime, RuntimeFuture};
+use tinyweb::callbacks::{create_async_callback, promise};
 use tinyweb::router::{Page, Router};
+use tinyweb::runtime::Runtime;
 use tinyweb::signals::Signal;
 use tinyweb::element::El;
 
-use tinyweb::http::*;
 use tinyweb::invoke::*;
 
 const BUTTON_CLASSES: &[&str] = &["bg-blue-500", "hover:bg-blue-700", "text-white", "p-2", "rounded", "m-2"];
@@ -22,20 +19,17 @@ thread_local! {
     pub static ROUTER: RefCell<Router> = RefCell::new(Router::default());
 }
 
-async fn fetch_json(method: HttpMethod, url: String, body: Option<JsonValue>) -> JsonValue {
-    let body_temp = body.map(|s| s.dump());
-    let body = body_temp.as_ref().map(|s| s.as_str());
-    let fetch_options = FetchOptions { method, url: &url, body, ..Default::default()};
-    let fetch_res = fetch(fetch_options).await;
-    let result = match fetch_res { FetchResponse::Text(_, d) => Ok(d), _ => Err(()), };
-    json::parse(&result.unwrap()).unwrap()
-}
-
-pub fn sleep(ms: impl Into<f64>) -> impl Future<Output = ()> {
-    let future = RuntimeFuture::new();
-    let callback_ref = create_future_callback(future.id());
-    Js::invoke("window.setTimeout({},{})", &[Ref(&callback_ref), Float(ms.into())]);
-    future
+async fn fetch_json(method: &str, url: &str, body: Option<JsonValue>) -> Result<JsonValue, String> {
+    let body = body.map(|s| s.dump()).unwrap_or_default();
+    let (callback_ref, future) = create_async_callback();
+    let request = r#"
+        const options = { method: {}, headers: { 'Content-Type': 'application/json' }, body: p0 !== 'GET' ? {} : null };
+        fetch({}, options).then(r => r.json()).then(r => { {}(r) })
+    "#;
+    Js::invoke(request, &[method.into(), body.into(), url.into(), callback_ref.into()]);
+    let object_id = future.await;
+    let result = Js::invoke("return JSON.stringify(objects[{}])", &[object_id.into()]).to_str().unwrap();
+    json::parse(&result).map_err(|_| "Parse error".to_owned())
 }
 
 fn page1() -> El {
@@ -56,11 +50,11 @@ fn page1() -> El {
         .on_mount(move |_| {
 
             // add listener
-            let body = Js::invoke_ref("return document.querySelector({})", &[Str("body")]);
+            let body = Js::invoke("return document.querySelector({})", &["body".into()]).to_ref().unwrap();
             let signal_key_clone = signal_key_clone.clone();
 
             El::from(&body).on_event("keydown", move |e| {
-                let key_code = Js::invoke_number("return {}[{}]", &[Ref(&e), Str("key_code")]);
+                let key_code = Js::invoke("return {}[{}]", &[e.into(), "keyCode".into()]).to_num().unwrap();
                 let key_name = keycodes::KEYBOARD_MAP[key_code as usize];
                 let text = format!("Pressed: {}", key_name);
                 signal_key_clone.set(text);
@@ -71,9 +65,9 @@ fn page1() -> El {
             Runtime::block_on(async move {
                 loop {
                     signal_time_clone.set("⏰ tik");
-                    sleep(1_000).await;
+                    promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
                     signal_time_clone.set("⏰ tok");
-                    sleep(1_000).await;
+                    promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
                 }
             });
 
@@ -82,13 +76,13 @@ fn page1() -> El {
         .child(El::new("button").text("api").classes(&BUTTON_CLASSES).on_event("click", |_| {
             Runtime::block_on(async move {
                 let url = format!("https://pokeapi.co/api/v2/pokemon/{}", 1);
-                let result = fetch_json(HttpMethod::GET, url, None).await;
+                let result = fetch_json("GET", &url, None).await.unwrap();
                 let name = result["name"].as_str().unwrap();
-                Js::invoke("alert({})", &[Str(&name.to_owned())]);
+                Js::invoke("alert({})", &[name.into()]);
             });
         }))
         .child(El::new("button").text("page 2").classes(&BUTTON_CLASSES).on_event("click", move |_| {
-            ROUTER.with(|s| { s.borrow().navigate("page2"); });
+            ROUTER.with(|s| { s.borrow().navigate("/page2"); });
         }))
         .child(El::new("br"))
         .child(El::new("button").text("add").classes(&BUTTON_CLASSES).on_event("click", move |_| {
@@ -97,15 +91,15 @@ fn page1() -> El {
         }))
         .child(El::new("div").text("0").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(&el_clone), Str(&v.to_string())]); });
+            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el_clone.element.into(), v.to_string().into()]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(&el_clone), Str(&v)]); });
+            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el_clone.element.into(), v.into()]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
             let el_clone = el.clone();
-            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[Ref(&el_clone), Str(&v)]); });
+            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el_clone.element.into(), v.into()]); });
         }))
 }
 
@@ -113,30 +107,16 @@ fn page2() -> El {
     El::new("div")
         .classes(&["m-2"])
         .child(El::new("button").text("page 1").classes(&BUTTON_CLASSES).on_event("click", move |_| {
-            ROUTER.with(|s| { s.borrow().navigate("page1"); });
+            ROUTER.with(|s| { s.borrow().navigate("/page1"); });
         }))
 }
 
 #[no_mangle]
 pub fn main() {
 
-    std::panic::set_hook(Box::new(|e| { Js::invoke("console.log({})", &[Str(&e.to_string())]); }));
-
-    // get pages
-    let pages = [
-        ("page1".to_owned(), Page { element: page1(), title: None }),
-        ("page2".to_owned(), Page { element: page2(), title: None })
-    ];
-
-    // load page
-    let body = Js::invoke_ref("return document.querySelector({})", &[Str("body")]);
-    let pathname = Js::invoke_str("return window.location.pathname", &[]);
-    let (_, page) = pages.iter().find(|&(s, _)| *s == pathname).unwrap_or(&pages[0]);
-    page.element.mount(&body);
+    std::panic::set_hook(Box::new(|e| { Js::invoke("console.log({})", &[e.to_string().into()]); }));
 
     // init router
-    ROUTER.with(|s| {
-        *s.borrow_mut() = Router { pages: HashMap::from_iter(pages), root: Some(body) };
-    });
-
+    let pages = &[Page::new("/page1", page1(), None), Page::new("/page2", page2(), None)];
+    ROUTER.with(|s| { *s.borrow_mut() = Router::new("body", pages); });
 }

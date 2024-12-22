@@ -4,6 +4,7 @@ members = [
     "src/rust",
     "examples/minimal",
     "examples/features",
-    "examples/simple",
+    "examples/dom",
+    "examples/callbacks",
 ]
 default-members = ["src/rust"]

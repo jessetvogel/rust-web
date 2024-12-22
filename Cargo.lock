@@ -63,6 +63,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ac0150caa2ae65ca5bd83f25c7de183dea78d4d366469f148435e2acfbad0da"
 
 [[package]]
+name = "callbacks"
+version = "0.1.0"
+dependencies = [
+ "tinyweb",
+]
+
+[[package]]
 name = "cc"
 version = "1.1.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -132,6 +139,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "dom"
+version = "0.1.0"
+dependencies = [
+ "tinyweb",
 ]
 
 [[package]]
@@ -871,13 +885,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9e9e0b4211b72e7b8b6e85c807d36c212bdb33ea8587f7569562a84df5465b1"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "simple"
-version = "0.1.0"
-dependencies = [
- "tinyweb",
 ]
 
 [[package]]

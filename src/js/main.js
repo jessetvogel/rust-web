@@ -61,23 +61,34 @@ const runFunction = (c_ptr, c_len, p_ptr, p_len) => {
 const getWasmImports = () => {
 
     const env = {
-        __invoke_and_return (c_ptr, c_len, p_ptr, p_len, r_type) {
-            // invoke function
+        __invoke (c_ptr, c_len, p_ptr, p_len) {
             const result = runFunction(c_ptr, c_len, p_ptr, p_len)
-            if (r_type !== 0 && (result === undefined || result === null)) throw new Error('Invalid return')
-
-            // return result
-            if (r_type === 0) {
-              return result
-            }  else if (r_type === 1) {
-              return result
-            } else if (r_type === 2) {
+            if (typeof result === "undefined") {
+              return (BigInt(0) << 32n) | BigInt(0)
+            }  else if (typeof result === "number") {
+              const ptr = writeBufferToMemory(textEncoder.encode(result))
+              return (BigInt(1) << 32n) | BigInt(ptr)
+            } else if (typeof result === "function") {
               objects.push(result)
-              return objects.length - 1
-            } else if (r_type === 3) {
-              return writeBufferToMemory(textEncoder.encode(result))
-            } else if (r_type === 4) {
-              return writeBufferToMemory(new Uint8Array(result))
+              return (BigInt(2) << 32n) | BigInt(objects.length - 1)
+            } else if (typeof result === "object") {
+              // because js has no primitive types for arrays
+              if (result instanceof Uint8Array) {
+                const ptr = writeBufferToMemory(new Uint8Array(result))
+                return (BigInt(3) << 32n) | BigInt(ptr)
+              } else {
+                objects.push(result)
+                return (BigInt(2) << 32n) | BigInt(objects.length - 1)
+              }
+            } else if (typeof result === "string") {
+              const ptr = writeBufferToMemory(textEncoder.encode(result))
+              return (BigInt(4) << 32n) | BigInt(ptr)
+            } else if (typeof result === "bigint") {
+              return (BigInt(5) << 32n) | BigInt(result)
+            } else if (typeof result === "boolean") {
+              return (BigInt(6) << 32n) | BigInt(result)
+            } else {
+              throw new Error("Invalid result type")
             }
         },
       __deallocate(object_id) {
