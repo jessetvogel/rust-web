@@ -4,11 +4,9 @@ Build the client-side with Rust. Combine it with any http framework to build ful
 
 # What's TinyWeb?
 
-TinyWeb is a toolkit to build web applications that care about simplicity and correctness.
+TinyWeb is a toolkit to build web applications that care about both correctness and simplicity.
 
-- It allows client side application to be build with canonical Rust utilizing its strict type system, zero-cost abstractions and great built-in tooling.
-
-- Has a tiny footprint of less than 800 lines of code, has no build step and no external dependencies.
+It allows client side application to be build with canonical Rust utilizing its strict type system and great built-in tooling. It has a tiny footprint of less than 800 lines of code, has no build step and no external dependencies.
 
 # Features
 
