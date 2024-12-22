@@ -1,9 +1,4 @@
 [workspace]
 resolver = "2"
-members = [
-    "src/rust",
-    "examples/minimal",
-    "examples/features",
-    "examples/simple",
-]
+members = ["src/rust", "examples/minimal", "examples/features", "examples/dom"]
 default-members = ["src/rust"]
