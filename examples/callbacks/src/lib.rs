@@ -29,7 +29,7 @@ pub fn main() {
     let future = RuntimeFuture::<String>::new();
     let future_id = future.id();
     let callback_ref = create_callback(move |e| {
-        let result = Js::invoke("return objects[{}].name", &[Str(e.to_string())]).to_str().unwrap();
+        let result = Js::invoke("return objects[{}].name", &[Number(*e as f64)]).to_str().unwrap();
         RuntimeFuture::wake(future_id, result);
     });
     Js::invoke("fetch({}).then(r => r.json()).then(r => { {}(r) })", &[Str(url.into()), Ref(callback_ref)]);
