@@ -9,7 +9,7 @@ use std::{
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker}
 };
 
-use crate::handlers::create_empty_callback;
+use crate::handlers::create_callback;
 use crate::invoke::Js;
 
 use crate::invoke::JsValue::*;
@@ -88,7 +88,7 @@ impl<T: 'static> Runtime<T> {
         }
         fn wake_fn<T: 'static>(ptr: *const ()) {
             let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };
-            let function_ref = create_empty_callback(move || { Runtime::poll(&_task); });
+            let function_ref = create_callback(move |_| { Runtime::poll(&_task); });
             Js::invoke("window.setTimeout({},0)", &[Ref(function_ref)]);
         }
         fn drop_fn<T>(ptr: *const ()) {

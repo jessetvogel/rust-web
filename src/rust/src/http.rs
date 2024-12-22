@@ -1,5 +1,5 @@
 
-use crate::handlers::create_empty_callback;
+use crate::handlers::create_callback;
 use crate::runtime::RuntimeFuture;
 use crate::invoke::Js;
 
@@ -67,7 +67,7 @@ pub fn fetch(options: FetchOptions) -> impl Future<Output = FetchResponse> {
     let r2 = request.clone();
     let future = RuntimeFuture::new();
     let future_id = future.id();
-    let function_ref = create_empty_callback(move || {
+    let function_ref = create_callback(move |_| {
 
         let status = Js::invoke("return {}.status", &[Ref(r2)]).to_num().unwrap() as u32;
         let result = match options.response_type {
