@@ -62,7 +62,7 @@ Then, create an `index.html` in a new `public` folder:
 
 Lastly, add `crate-type =["cdylib"]` right below `[lib]` section in `Cargo.toml`.
 
-Then build the project with `cargo build --target wasm32-unknown-unknown -r` and `cp target/wasm32-unknown-unknown/release/*.wasm public/client.wasm` to get the `.wasm` in the right place. You can now serve the contents of the `public` folder with your favourite static http server.
+Then build the project with `cargo build --target wasm32-unknown-unknown -r` and `cp target/wasm32-unknown-unknown/release/*.wasm public/client.wasm` to get the `.wasm` in the right place. Then serve the `public` folder with any static http server.
 
 
 
