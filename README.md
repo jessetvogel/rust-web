@@ -1,6 +1,6 @@
 # TinyWeb 🌱 Rust on the client. No dependencies.
 
-Build the client side with Rust! Compatible with any HTTP framework for creating full-stack applications in pure Rust!
+Build the client side with Rust! Backend agnostic. Less than 800 lines of code.
 
 # What's TinyWeb?
 
