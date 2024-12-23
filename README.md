@@ -1,12 +1,12 @@
 # TinyWeb 🌱 Rust on the client. No dependencies.
 
-Build the client-side with Rust. Works with any http framework to build fullstack applications in pure Rust!
+Build the client side with Rust! Compatible with any HTTP framework for creating full-stack applications in pure Rust!
 
 # What's TinyWeb?
 
-TinyWeb is a toolkit to build web applications that care about both correctness and simplicity.
+TinyWeb is a toolkit for building web applications focused on both correctness and simplicity.
 
-Allows client side applications to be build in pure Rust in a similar fashion to backend applications, utilizing the language strict type system and great built-in tooling. Has a tiny footprint with less than 800 lines of code, has no build step and no external dependencies.
+Enables client-side applications to be built in pure Rust, similar to backend applications, leveraging the language strict type system and great built-in tooling. Has a tiny footprint with less than 800 lines of code, has no build step and no external dependencies.
 
 # Features
 
@@ -68,11 +68,13 @@ Then build the project with `cargo build --target wasm32-unknown-unknown -r` and
 
 # How it works
 
-**Components:** Each project built with TinyWeb has 3 components, an `index.html`, a static `main.js` and a `client.wasm` file compiled from Rust with `cargo build --target wasm32-unknown-unknown -r`. These files are served using any static HTTP server.
+**Components:** Each project built with TinyWeb has 3 components, an `index.html`, a static `main.js` and a `client.wasm` file compiled from Rust with `cargo build --target wasm32-unknown-unknown -r`. These files can be served with any static HTTP server.
 
-**Initialization:** When the website is visited, the `index.html` file loads the [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) file which registers a [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) event listener. When the page finish loading the listener is triggered and it [calls](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) the `main` function in the wasm file that usually makes the initial DOM rendering and registers event listeners.
+**Initialization:** When the website is visited, the `index.html` file loads the [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) file which registers a [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) event listener. When the page finishes loading, the listener is triggered which [calls](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) the `main` function in the wasm file (usually making the initial DOM rendering and registering event listeners).
 
-**Browser APIs and callbacks:** When a Rust function wants to invoke a browser API it uses the [__invoke](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs) function under the hood which in turn calls its [homonymous function](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) in Javascript. Every time a callback is triggered, it calls the [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs) function that executes the callback logic.
+**Browser APIs:** When a Rust function wants to invoke a browser API, it uses the [__invoke](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs) function internally, which in turn calls its [counterpart](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) in Javascript.
+
+**Callbacks:** When a listener is registered in Rust, it takes a callback function as a parameter and that function is stored in [CALLBACK_HANDLERS](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/callbacks.rs). Every time the callback is triggered, the [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs) function is called which executes the callback function that was stored earlier.
 
 # How to's & guides
 
