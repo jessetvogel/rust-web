@@ -146,7 +146,7 @@ For quite some time, I couldn't decide if I like Typescript or not. On one hand,
 
 When I had to build a application where I really cared that correctness, I realized how much I don't trust Typescript even for what's designed to do and I tried different wasm based web frameworks that allow building web applications using Rust. These frameworks alleviated the correctness concern but they complicate things a lot requiring hundereds of dependencies just to get started. For reference, `leptos` depends on 231 crates and its development tool `cargo-leptos` depends on another 485 crates.
 
-A major reason for this complexity is that these frameworks depend on the `wasm-bindgen` crate that build the Rust bindings for browser APIs and the Javascript glue code that allows making these calls. But the `wasm-bindgen` is just one way to interact with browser APIs that trades off simplicity for performance and not all applications benefit from this trade off. The application I building most probably wouldn't.
+A major reason for this complexity is that these frameworks depend on the `wasm-bindgen` crate that build the Rust bindings for browser APIs and the Javascript glue code that allows making these calls. But the `wasm-bindgen` is just one way to interact with browser APIs that trades off simplicity for performance and not all applications benefit from this trade off. The application I'm building most probably wouldn't.
 
 So, I set out to build a web framework that allows to build client side applications with Rust that has a minimal footprint. The result is `TinyWeb`, a client side Rust framework built in <800 lines of code.
 
