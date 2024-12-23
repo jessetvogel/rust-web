@@ -68,9 +68,7 @@ Then build the project with `cargo build --target wasm32-unknown-unknown -r` and
 
 # How it works
 
-**Components:** Each project built with TinyWeb has 3 components, an `index.html`, a static `main.js` and a `client.wasm` file compiled from Rust with `cargo build --target wasm32-unknown-unknown -r`. These files can be served with any static HTTP server.
-
-**Initialization:** When the website is visited, the `index.html` file loads the [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) file which registers a [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) event listener. When the page finishes loading, the listener is triggered which [calls](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) the `main` function in the wasm file (usually making the initial DOM rendering and registering event listeners).
+**Initialization:** Each project built with TinyWeb has 3 components, an `index.html`, a static `main.js` and a `client.wasm` file compiled from Rust with `cargo build --target wasm32-unknown-unknown -r`. These files can be served with any static HTTP server. When the website is visited, the `index.html` file loads the [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) file which registers a [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) event listener. When the page finishes loading, the listener is triggered which [calls](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) the `main` function in the wasm file (usually making the initial DOM rendering and registering event listeners).
 
 **Browser APIs:** When a Rust function wants to invoke a browser API, it uses the [__invoke](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs) function internally, which in turn calls its [counterpart](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) in Javascript.
 
