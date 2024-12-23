@@ -1,12 +1,12 @@
 # TinyWeb 🌱 Rust on the client. No dependencies.
 
-Build the client-side with Rust. Works with any http framework to build fullstack applications in canonical Rust!
+Build the client-side with Rust. Works with any http framework to build fullstack applications in pure Rust!
 
 # What's TinyWeb?
 
 TinyWeb is a toolkit to build web applications that care about both correctness and simplicity.
 
-It allows client side application to be build with canonical Rust utilizing its strict type system and great built-in tooling. It has a tiny footprint of less than 800 lines of code, has no build step and no external dependencies.
+Allows client side applications to be build in pure Rust in a similar fashion to backend applications, utilizing the language strict type system and great built-in tooling. Has a tiny footprint with less than 800 lines of code, has no build step and no external dependencies.
 
 # Features
 
@@ -68,12 +68,15 @@ Then build the project with `cargo build --target wasm32-unknown-unknown -r` and
 
 # How it works
 
-At first, the Rust code is compiled to wasm with `cargo build --target wasm32-unknown-unknown -r` and has to be serve alongside `index.html`. Once `index.html` is loaded in the browser, a [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L114) event
-is triggered in [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L91) which loads the wasm file. Note that, in contrast to other Rust based frameworks, the javascript file here is static. That's because it does not use `wasm-bindgen` to build the browser bindings but instead the only types that are passed to and from javascript are primitive types such as numbers, strings, buffers and references to javascript objects.
+Each project built with TinyWeb has 3 components, an `index.html`, a static `main.js` and a `client.wasm` file compile from Rust with `cargo build --target wasm32-unknown-unknown -r`. These files can be served using an static HTTP server.
 
-Once the wasm file is loaded, the `main` function is [called](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L96) and this function acts as an initialization hook similar to `DOMContentLoaded` in vanilla javascript or `useEffect` in React. The `main` function usually makes the initial rendering and registers listeners for different DOM elements.
+**Init:**
+So when a user opens the website `index.html` is loaded in the browser which loads [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js). This file registers a [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) event which when triggered [calls](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) the `main` function in the wasm file. The `main` function usually makes the initial DOM rendering and registers listeners for different DOM events.
 
-Every time a rust function wants to invoke a browser API it uses the [__invoke](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs#L84) which calls the [corresponding function](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js#L64) in javascript. Callbacks such as event listeners are register through the `__invoke` function and then call a dedicated function in wasm named [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs#L14).
+**Browser APIs and callbacks:**
+Every time a rust function wants to invoke a browser API it uses the [__invoke](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs) function under the hood which calls the [homonymous function](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) in Javascript. When a previously registered callback is triggered a function named [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs) in called that handles the callback logic.
+
+*Note:* One key difference between TinyWeb and most other Rust based web frameworks is that there isn't a build step to compile browser bindings for Rust / Javascript using `wasm-bindgen`. Instead this library only supports primitive Javascript types such as numbers, booleans, bigints, strings, buffers and objects references to simplify the building process and have a static javascript file.
 
 # How to's & guides
 
@@ -85,7 +88,7 @@ use tinyweb::invoke::Js;
 Js::invoke("alert('hello browser')", &[]);
 ```
 
-Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L87)
+Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs)
 
 ### Reactivity and Signals
 
@@ -102,7 +105,7 @@ El::new("button").text("add").on_event("click", move |_| {
 });
 ```
 
-Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L94)
+Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs)
 
 ### Router support
 
@@ -121,7 +124,7 @@ ROUTER.with(|s| { *s.borrow_mut() = Router::new("body", pages); });
 ROUTER.with(|s| { s.borrow().navigate("/page1"); });
 ```
 
-Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L21)
+Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs)
 
 ### Async Support
 
@@ -139,19 +142,17 @@ Runtime::block_on(async move {
 });
 ```
 
-Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs#L83)
+Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs)
 
 # Backstory
 
-For quite some time, I've been torn about typescript. It brings stronger typing to javascript making me more confident about the code but it comes with a heavy build system that makes debugging a lot more complex.
+For quite some time, I couldn't decide if I like Typescript or not. On one hand, it has stronger typing than pure Javascript bringing more confidence about the code but on the other hand it comes with a heavy build system that makes complicates the project a lot and makes debugging a significantly harder.
 
-At some point I had to build a new application that I really cared that correctness and realized how much I don't trust typescript even for what's design to do.
+When I had to build a application where I really cared that correctness, I realized how much I don't trust Typescript even for what's designed to do and I tried different wasm based web frameworks that allow building web applications using Rust. These frameworks alleviated the correctness concern but they complicate things a lot requiring hundereds of dependencies just to get started. For reference, `leptos` depends on 231 crates and its development tool `cargo-leptos` depends on another 485 crates.
 
-I then tried different wasm based frameworks like Leptos and Yew. These crates were great at correctness and I was confident about the result but the come with a cost. Each requires hundereds of dependencies just to get started. For reference, leptos development tool `cargo-leptos` depends on other 485 crates and `leptos` itself on 231 more.
+A major reason for this complexity is that these frameworks depend on the `wasm-bindgen` crate that build the Rust bindings for browser APIs and the Javascript glue code that allows making these calls. But the `wasm-bindgen` is just one way to interact with browser APIs that trades off simplicity for performance and not all applications benefit from this trade off. The application I building most probably wouldn't.
 
-When I digged into it more, I realised that these dependencies come from `wasm-bindgen`. The `wasm-bindgen` crate is the standard in developing client side code with Rust and is maintained by [The Rust and WebAssembly Working Group](https://rustwasm.github.io), the group that's maintaining webassembly itself.
-
-So, I setup out to build a web framework that allows to build client side applications with Rust but it's still simple and `tinyweb` is the result. A client side Rust framework built in <800 lines of code.
+So, I set out to build a web framework that allows to build client side applications with Rust that has a minimal footprint. The result is `TinyWeb`, a client side Rust framework built in <800 lines of code.
 
 # Credits
 
