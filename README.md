@@ -68,13 +68,11 @@ Then build the project with `cargo build --target wasm32-unknown-unknown -r` and
 
 # How it works
 
-Each project built with TinyWeb has 3 components, an `index.html`, a static `main.js` and a `client.wasm` file compile from Rust with `cargo build --target wasm32-unknown-unknown -r`. These files can be served using an static HTTP server.
+Each project built with TinyWeb has 3 components, an `index.html`, a static `main.js` and a `client.wasm` file compile from Rust with `cargo build --target wasm32-unknown-unknown -r`. These files can be served using any static HTTP server.
 
-**Initialization:** So when a user opens the website `index.html` is loaded in the browser which loads [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js). This file registers a [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) event which when triggered [calls](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) the `main` function in the wasm file. The `main` function usually makes the initial DOM rendering and registers listeners for different DOM events.
+**Initialization:** When the website visited `index.html` loads [main.js](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) which  registers a [DOMContentLoaded](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) event. When this page finish loading the listener is triggered and it [calls](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) the `main` function in the wasm file that usually makes the initial DOM rendering and registers event listeners.
 
-**Browser APIs and callbacks:** Every time a rust function wants to invoke a browser API it uses the [__invoke](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs) function under the hood which calls the [homonymous function](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) in Javascript. When a previously registered callback is triggered a function named [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs) in called that handles the callback logic.
-
-*Note:* One key difference between TinyWeb and most other Rust based web frameworks is that there isn't a build step to compile browser bindings for Rust / Javascript using `wasm-bindgen`. Instead this library only supports primitive Javascript types such as numbers, booleans, bigints, strings, buffers and objects references to simplify the building process and have a static javascript file.
+**Browser APIs and callbacks:** Every time a rust function wants to invoke a browser API it uses the [__invoke](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/invoke.rs) function under the hood which in turn calls its [homonymous function](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/js/main.js) in Javascript. When a callback is triggered, [handle_callback](https://github.com/LiveDuo/tinyweb/blob/feature/readme/src/rust/src/handlers.rs) in called which handles the callback logic.
 
 # How to's & guides
 
