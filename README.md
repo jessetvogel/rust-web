@@ -142,13 +142,15 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 
 # Backstory
 
-For quite some time, I couldn't decide if I like Typescript or not. On one hand, it has stronger typing than pure Javascript bringing more confidence about the code but on the other hand it comes with a heavy build system that makes complicates the project a lot and makes debugging a significantly harder.
+For quite some time, I couldn't decide if I like Typescript or not. On one hand, it offers stronger typing than pure JavaScript, providing more confidence in the code; but on the other hand, it comes with a heavy build system that complicates things and makes debugging significantly harder.
 
-When I had to build a application where I really cared that correctness, I realized how much I don't trust Typescript even for what's designed to do and I tried different wasm based web frameworks that allow building web applications using Rust. These frameworks alleviated the correctness concern but they complicate things a lot requiring hundereds of dependencies just to get started. For reference, `leptos` depends on 231 crates and its development tool `cargo-leptos` depends on another 485 crates.
+When I had to build an application where I really cared about correctness, I realized how much I didn't trust Typescript even for what's designed to do and I tried different Rust based web frameworks instead. While these frameworks alleviated correctness concerns, they introduced significant complexity, requiring hundreds of dependencies just to get started. For reference, `leptos` depends on 231 crates and its development tool `cargo-leptos` depends on another 485 crates.
 
-A major reason for this complexity is that these frameworks depend on the `wasm-bindgen` crate that build the Rust bindings for browser APIs and the Javascript glue code that allows making these calls. But the `wasm-bindgen` is just one way to interact with browser APIs that trades off simplicity for performance and not all applications benefit from this trade off. The application I'm building most probably wouldn't.
+Many of these dependencies come from the `wasm-bindgen` crate, which generates Rust bindings for browser APIs and the JavaScript glue code needed for these calls and is used almost universally by Rust based web frameworks as a lower level building block for accessing browser APIs.
 
-So, I set out to build a web framework that allows to build client side applications with Rust that has a minimal footprint. The result is `TinyWeb`, a client side Rust framework built in <800 lines of code.
+Yet, using this crate is not the only way to interact with browser APIs and many applications could benefit from a different tool that makes different tradeoffs. In particular, many applications might benefit from simplicity and ease of debuggging, I know the application I'm building probably would.
+
+So, I set out to build a web framework that allows to build client side applications with Rust and has minimal footprint. The result is `TinyWeb`, a client side Rust framework built in <800 lines of code.
 
 # Credits
 
