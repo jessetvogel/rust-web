@@ -20,9 +20,7 @@ impl El {
     pub fn unmount(&self) {
         let mut c = self.callbacks.borrow_mut();
         c.iter().for_each(|p| {
-            crate::callbacks::CALLBACK_HANDLERS.with(|s| {
-                s.lock().map(|mut h| { let _ = h.remove(p).unwrap(); }).unwrap();
-            });
+            crate::callbacks::CALLBACK_HANDLERS.with(|s| { let _ = s.borrow_mut().remove(p).unwrap(); });
         });
         c.clear();
     }
