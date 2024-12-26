@@ -40,28 +40,27 @@ impl<T: Clone + Send + 'static> Signal<T> {
 #[cfg(test)]
 mod tests {
 
-    // use super::*;
+    use super::*;
 
     #[test]
     fn test_signals() {
 
-        // // create signal
-        // let logs: Arc<Mutex<Vec<u32>>> = Default::default();
-        // let signal = Signal::new(10);
+        // create signal
+        let logs: Rc<RefCell<Vec<u32>>> = Default::default();
+        let signal = Signal::new(10);
 
-        // // create effects
-        // let logs_clone = logs.clone();
-        // signal.on(move |v| { logs_clone.lock().map(|mut s| { s.push(v); }).unwrap(); });
-        // let logs_clone = logs.clone();
-        // signal.on(move |v| { logs_clone.lock().map(|mut s| { s.push(v); }).unwrap(); });
+        // create effects
+        let logs_clone = logs.clone();
+        signal.on(move |v| { logs_clone.borrow_mut().push(v); });
+        let logs_clone = logs.clone();
+        signal.on(move |v| { logs_clone.borrow_mut().push(v); });
 
-        // // update signal
-        // signal.set(20);
-        // signal.set(30);
+        // update signal
+        signal.set(20);
+        signal.set(30);
 
-        // // check logs
-        // let received = logs.lock().map(|s| s.to_owned()).unwrap();
-        // assert_eq!(received, vec![10, 10, 20, 20, 30, 30]);
+        // check logs
+        assert_eq!(*logs.borrow(), vec![10, 10, 20, 20, 30, 30]);
     }
 
 }
