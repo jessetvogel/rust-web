@@ -5,7 +5,7 @@ use std::{
     future::Future,
     mem::ManuallyDrop,
     pin::Pin,
-    sync::{Arc, Mutex},
+    rc::Rc,
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker}
 };
 
@@ -13,26 +13,25 @@ use crate::callbacks::create_callback;
 use crate::invoke::Js;
 
 thread_local! {
-    static STATE_MAP: RefCell<HashMap<u32, Box<dyn Any>>> = Default::default(); // Cast: Arc<Mutex<RuntimeState<T>>>
+    static STATE_MAP: RefCell<HashMap<u32, Box<dyn Any>>> = Default::default(); // Cast: Rc<RefCell<RuntimeState<T>>>
 }
 
 pub struct RuntimeState<T> { completed: bool, waker: Option<Waker>, result: Option<T>, }
-pub struct RuntimeFuture<T> { id: u32, state: Arc<Mutex<RuntimeState<T>>>, }
+pub struct RuntimeFuture<T> { id: u32, state: Rc<RefCell<RuntimeState<T>>>, }
 pub struct Runtime<T> { future: RefCell<Pin<Box<dyn Future<Output = T>>>>, }
 
 impl<T> Future for RuntimeFuture<T> {
     type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let future = self.state.lock().map(|mut s| {
-            if s.completed && s.result.is_some() {
-                Poll::Ready(s.result.take().unwrap())
-            } else {
-                s.waker = Some(cx.waker().to_owned());
-                Poll::Pending
-            }
-        }).unwrap();
-        return future;
+        let mut future = self.state.borrow_mut();
+        let poll = if future.completed && future.result.is_some() {
+            Poll::Ready(future.result.take().unwrap())
+        } else {
+            future.waker = Some(cx.waker().to_owned());
+            Poll::Pending
+        };
+        return poll;
     }
 }
 
@@ -43,7 +42,7 @@ impl <T: 'static> RuntimeFuture<T> {
         // using `Number.MAX_SAFE_INTEGER` exceeds u32
         let future_id = Js::invoke("return Math.random() * (2 ** 32)", &[]).to_num().unwrap();
         let state = RuntimeState { completed: false, waker: None, result: None, };
-        let state_arc = Arc::new(Mutex::new(state));
+        let state_arc = Rc::new(RefCell::new(state));
         STATE_MAP.with_borrow_mut(|s| {
             s.insert(future_id as u32, Box::new(state_arc.clone()));
         });
@@ -56,12 +55,12 @@ impl <T: 'static> RuntimeFuture<T> {
     pub fn wake(future_id: u32, result: T) {
         STATE_MAP.with_borrow_mut(|s| {
             let future_any = s.get_mut(&future_id).unwrap();
-            let future = future_any.downcast_mut::<Arc<Mutex<RuntimeState<T>>>>().unwrap();
-            future.lock().map(|mut p| {
-                if let Some(waker) = p.waker.take() { waker.wake(); }
-                p.completed = true;
-                p.result = Some(result);
-            }).unwrap();
+            let future = future_any.downcast_mut::<Rc<RefCell<RuntimeState<T>>>>().unwrap();
+            let mut p = future.borrow_mut();
+            if let Some(waker) = p.waker.take() { waker.wake(); }
+            p.completed = true;
+            p.result = Some(result);
+            drop(p);
             s.remove(&future_id).unwrap();
         });
     }
@@ -69,28 +68,28 @@ impl <T: 'static> RuntimeFuture<T> {
 
 impl<T: 'static> Runtime<T> {
 
-    fn poll(task: &Arc<Self>) {
+    fn poll(task: &Rc<Self>) {
         let waker = Self::waker(&task);
         let waker_forget = ManuallyDrop::new(waker);
         let context = &mut Context::from_waker(&waker_forget);
         let _poll = task.future.borrow_mut().as_mut().poll(context);
     }
 
-    fn waker(task: &Arc<Self>) -> Waker {
+    fn waker(task: &Rc<Self>) -> Waker {
 
         fn clone_fn<T: 'static>(ptr: *const ()) -> RawWaker {
-            let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };
+            let _task = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
             let _ = ManuallyDrop::new(_task).clone();
 
             RawWaker::new(ptr, waker_vtable::<T>())
         }
         fn wake_fn<T: 'static>(ptr: *const ()) {
-            let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };
+            let _task = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
             let function_ref = create_callback(move |_| { Runtime::poll(&_task); });
             Js::invoke("window.setTimeout({},0)", &[function_ref.into()]);
         }
         fn drop_fn<T>(ptr: *const ()) {
-            let _task = unsafe { Arc::<Runtime<T>>::from_raw(ptr as *const _) };
+            let _task = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
             drop(_task);
         }
         fn waker_vtable<T: 'static>() -> &'static RawWakerVTable {
@@ -103,7 +102,7 @@ impl<T: 'static> Runtime<T> {
 
     pub fn block_on(future: impl Future<Output = T> + 'static) {
         let runtime = Self { future: RefCell::new(Box::pin(future)) };
-        Self::poll(&Arc::new(runtime));
+        Self::poll(&Rc::new(runtime));
     }
 }
 
@@ -119,10 +118,10 @@ mod tests {
 
         Runtime::block_on(async move {
             let future = RuntimeFuture::new();
-            assert_eq!(future.state.lock().map(|s| s.result).unwrap(), None);
+            assert_eq!(future.state.borrow().result, None);
 
             RuntimeFuture::wake(future.id, true);
-            assert_eq!(future.state.lock().map(|s| s.result).unwrap(), Some(true));
+            assert_eq!(future.state.borrow().result, Some(true));
 
             let result = future.await;
             assert_eq!(result, true);
@@ -132,12 +131,11 @@ mod tests {
 
     #[test]
     fn test_block_on() {
-        let has_run = Arc::new(Mutex::new(false));
+        let has_run = Rc::new(RefCell::new(false));
         let has_run_clone = has_run.clone();
-        Runtime::block_on(async move { has_run_clone.lock().map(|mut s| { *s = true; }).unwrap(); });
+        Runtime::block_on(async move { *has_run_clone.borrow_mut() = true; });
 
-        let result = has_run.lock().map(|s| *s).unwrap();
-        assert_eq!(result, true);
+        assert_eq!(*has_run.borrow(), true);
     }
 
 }
