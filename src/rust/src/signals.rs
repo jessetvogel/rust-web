@@ -9,8 +9,9 @@ pub struct Signal<T> {
 }
 
 impl<T: Clone + Send + 'static> Signal<T> {
-    pub fn new(value: T) -> Self {
-        Self { value: Rc::new(RefCell::new(value)), subscribers: Default::default(), }
+    pub fn new(value: T) -> &'static Self {
+        let signal = Self { value: Rc::new(RefCell::new(value)), subscribers: Default::default(), };
+        &*Box::leak(Box::new(signal))
     }
     pub fn get(&self) -> T {
         // self.value.lock().map(|s| s.to_owned()).unwrap()

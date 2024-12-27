@@ -34,39 +34,30 @@ async fn fetch_json(method: &str, url: &str, body: Option<JsonValue>) -> Result<
 
 fn page1() -> El {
 
-    // key signal
+    // signals
     let signal_key = Signal::new("-".to_owned());
-    let signal_key_clone = signal_key.clone();
-
-    // count signal
     let signal_count = Signal::new(0);
-    let signal_count_clone = signal_count.clone();
-
-    // time signal
     let signal_time = Signal::new("-");
-    let signal_time_clone = signal_time.clone();
 
     El::new("div")
         .on_mount(move |_| {
 
             // add listener
             let body = Js::invoke("return document.querySelector({})", &["body".into()]).to_ref().unwrap();
-            let signal_key_clone = signal_key_clone.clone();
 
             El::from(&body).on_event("keydown", move |e| {
                 let key_code = Js::invoke("return {}[{}]", &[e.into(), "keyCode".into()]).to_num().unwrap();
                 let key_name = keycodes::KEYBOARD_MAP[key_code as usize];
                 let text = format!("Pressed: {}", key_name);
-                signal_key_clone.set(text);
+                signal_key.set(text);
             });
 
             // start timer
-            let signal_time_clone = signal_time_clone.clone();
             Runtime::block_on(async move {
                 loop {
-                    signal_time_clone.set("⏰ tik");
+                    signal_time.set("⏰ tik");
                     promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
-                    signal_time_clone.set("⏰ tok");
+                    signal_time.set("⏰ tok");
                     promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
                 }
             });
@@ -86,8 +77,8 @@ fn page1() -> El {
         }))
         .child(El::new("br"))
         .child(El::new("button").text("add").classes(&BUTTON_CLASSES).on_event("click", move |_| {
-            let count = signal_count_clone.get() + 1;
-            signal_count_clone.set(count);
+            let count = signal_count.get() + 1;
+            signal_count.set(count);
         }))
         .child(El::new("div").text("0").on_mount(move |el| {
             let el_clone = el.clone();
