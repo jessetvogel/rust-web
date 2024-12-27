@@ -81,16 +81,13 @@ fn page1() -> El {
             signal_count.set(count);
         }))
         .child(El::new("div").text("0").on_mount(move |el| {
-            let el_clone = el.clone();
-            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el_clone.element.into(), v.to_string().into()]); });
+            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el.element.into(), v.to_string().into()]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
-            let el_clone = el.clone();
-            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el_clone.element.into(), v.into()]); });
+            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el.element.into(), v.into()]); });
         }))
         .child(El::new("div").text("-").on_mount(move |el| {
-            let el_clone = el.clone();
-            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el_clone.element.into(), v.into()]); });
+            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el.element.into(), v.into()]); });
         }))
 }
 

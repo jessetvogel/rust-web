@@ -49,8 +49,8 @@ impl El {
         }
         self
     }
-    pub fn on_mount(self, mut cb: impl FnMut(&Self) + 'static) -> Self {
-        cb(&self);
+    pub fn on_mount(self, mut cb: impl FnMut(&'static Self) + 'static) -> Self {
+        cb(Box::leak(Box::new(self.to_owned())));
         self
     }
     pub fn on_event(self, event: &str, cb: impl FnMut(ObjectRef) + 'static) -> Self {
