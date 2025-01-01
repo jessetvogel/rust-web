@@ -61,7 +61,6 @@ impl <T: 'static> RuntimeFuture<T> {
 
             if let RuntimeState::Pending(ref mut waker) = future { waker.to_owned().wake(); }
             *future = RuntimeState::Competed(result);
-
         });
     }
 }
