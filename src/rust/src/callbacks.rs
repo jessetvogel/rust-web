@@ -92,9 +92,9 @@ mod tests {
         crate::runtime::Runtime::block_on(async move { future.await; });
 
         // remove listener
-        // CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.remove(&function_ref); }).unwrap(); });
-        // let count = CALLBACK_HANDLERS.with(|s| s.lock().map(|s| s.len()).unwrap());
-        // assert_eq!(count, 0);
+        CALLBACK_HANDLERS.with(|s| { s.borrow_mut().remove(&function_ref); });
+        let count = CALLBACK_HANDLERS.with(|s| s.borrow().len());
+        assert_eq!(count, 0);
     }
 
 }
