@@ -14,7 +14,6 @@ impl<T: Clone + Send + 'static> Signal<T> {
         &*Box::leak(Box::new(signal))
     }
     pub fn get(&self) -> T {
-        // self.value.lock().map(|s| s.to_owned()).unwrap()
         self.value.borrow().clone()
     }
     pub fn set(&self, new_value: T) {
