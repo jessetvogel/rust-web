@@ -116,25 +116,23 @@ mod tests {
     #[test]
     fn test_await() {
 
-        Runtime::block_on(async move {
-            let future = RuntimeFuture::new();
-            assert_eq!(future.state.borrow().result, None);
+        // create future
+        let future = RuntimeFuture::new();
+        assert_eq!(future.id, 0);
+        assert_eq!(future.state.borrow().result, None);
+        assert_eq!(future.state.borrow().completed, false);
+        assert_eq!(future.state.borrow().waker.is_some(), false);
 
-            RuntimeFuture::wake(future.id, true);
-            assert_eq!(future.state.borrow().result, Some(true));
+        // wake future
+        RuntimeFuture::wake(future.id, true);
+        assert_eq!(future.state.borrow().result, Some(true));
+        assert_eq!(future.state.borrow().completed, true);
+        assert_eq!(future.state.borrow().waker.is_some(), false);
 
-            let result = future.await;
-            assert_eq!(result, true);
-        });
-
-    }
-
-    #[test]
-    fn test_block_on() {
+        // block on future
         let has_run = Rc::new(RefCell::new(false));
         let has_run_clone = has_run.clone();
-        Runtime::block_on(async move { *has_run_clone.borrow_mut() = true; });
-
+        Runtime::block_on(async move { *has_run_clone.borrow_mut() = future.await; });
         assert_eq!(*has_run.borrow(), true);
     }
 
