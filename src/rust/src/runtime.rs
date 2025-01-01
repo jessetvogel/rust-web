@@ -46,12 +46,10 @@ impl<T: Clone + 'static> Future for RuntimeFuture<T> {
 // https://rust-lang.github.io/async-book/02_execution/03_wakeups.html
 impl <T: 'static> RuntimeFuture<T> {
     pub fn new() -> Self {
-
         let future_id = STATE_MAP.with_borrow_mut(|s| {
             s.push(Box::new(RuntimeState::<T>::Init));
             s.len() - 1
         });
-
         Self { id: future_id, phantom: PhantomData::default() }
     }
 
@@ -104,7 +102,6 @@ impl<T: 'static> Runtime<T> {
         Self::poll(&Rc::new(runtime));
     }
 }
-
 
 
 #[cfg(test)]
