@@ -16,7 +16,8 @@ thread_local! {
     static STATE_MAP: RefCell<Vec<Box<dyn Any>>> = Default::default(); // Cast: RuntimeState<T>
 }
 
-enum RuntimeState<T> { Pending(Option<Waker>), Competed(T) }
+#[derive(Clone)]
+enum RuntimeState<T> { Init, Pending(Waker), Competed(T) }
 
 pub struct RuntimeFuture<T> { id: usize, phantom: PhantomData<T>, }
 pub struct Runtime<T> { future: RefCell<Pin<Box<dyn Future<Output = T>>>>, }
@@ -29,8 +30,12 @@ impl<T: Clone + 'static> Future for RuntimeFuture<T> {
         STATE_MAP.with_borrow_mut(|s| {
             let future = s[self.id].downcast_mut::<RuntimeState<T>>().unwrap();
             match future {
+                RuntimeState::Init => {
+                    *future = RuntimeState::Pending(cx.waker().to_owned());
+                    Poll::Pending
+                },
                 RuntimeState::Pending(waker) => {
-                    *waker = Some(cx.waker().to_owned());
+                    *waker = cx.waker().to_owned();
                     Poll::Pending
                 }
                 RuntimeState::Competed(result) => {
@@ -47,7 +52,7 @@ impl<T: Clone + 'static> Future for RuntimeFuture<T> {
 impl <T: 'static> RuntimeFuture<T> {
     pub fn new() -> Self {
 
-        let state = RuntimeState::<T>::Pending(None);
+        let state = RuntimeState::<T>::Init;
         let future_id = STATE_MAP.with_borrow_mut(|s| {
             s.push(Box::new(state));
             s.len() - 1
@@ -62,9 +67,7 @@ impl <T: 'static> RuntimeFuture<T> {
         STATE_MAP.with_borrow_mut(|s| {
             let future = s[future_id].downcast_mut::<RuntimeState<T>>().unwrap();
 
-            if let RuntimeState::Pending(ref mut waker) = future {
-                if let Some(waker) = waker.as_mut() { waker.to_owned().wake(); }
-            }
+            if let RuntimeState::Pending(ref mut waker) = future { waker.to_owned().wake(); }
             *future = RuntimeState::Competed(result);
 
         });
@@ -126,17 +129,13 @@ mod tests {
         assert_eq!(future.id, 0);
 
         let future_id = future.id;
-        STATE_MAP.with_borrow_mut(|s| {
-            let state = s[future_id].downcast_mut::<RuntimeState<bool>>().unwrap();
-            assert_eq!(matches!(state, RuntimeState::Pending(None)), true);
-        });
+        let state = STATE_MAP.with_borrow_mut(|s| { s[future_id].downcast_mut::<RuntimeState<bool>>().unwrap().to_owned() });
+        assert_eq!(matches!(state, RuntimeState::Init), true);
 
         // wake future
         RuntimeFuture::wake(future.id, true);
-        STATE_MAP.with_borrow_mut(|s| {
-            let state = s[future_id].downcast_mut::<RuntimeState<bool>>().unwrap();
-            assert_eq!(matches!(state, RuntimeState::Competed(true)), true);
-        });
+        let state = STATE_MAP.with_borrow_mut(|s| { s[future_id].downcast_mut::<RuntimeState<bool>>().unwrap().to_owned() });
+        assert_eq!(matches!(state, RuntimeState::Competed(true)), true);
 
         // block on future
         let has_run = Rc::new(RefCell::new(false));
