@@ -43,16 +43,15 @@ impl<T: Clone + 'static> Future for RuntimeFuture<T> {
     }
 }
 
-// https://rust-lang.github.io/async-book/02_execution/03_wakeups.html
 impl <T: 'static> RuntimeFuture<T> {
     pub fn new() -> Self {
-        let future_id = STATE_MAP.with_borrow_mut(|s| {
+        STATE_MAP.with_borrow_mut(|s| {
             s.push(Box::new(RuntimeState::<T>::Init));
-            s.len() - 1
-        });
-        Self { id: future_id, phantom: PhantomData::default() }
+            Self { id: s.len() - 1, phantom: PhantomData::default() }
+        })
     }
 
+    // https://rust-lang.github.io/async-book/02_execution/03_wakeups.html
     pub fn wake(future_id: usize, result: T) {
         STATE_MAP.with_borrow_mut(|s| {
             let future = s[future_id].downcast_mut::<RuntimeState<T>>().unwrap();
