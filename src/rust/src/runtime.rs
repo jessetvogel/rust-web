@@ -17,12 +17,12 @@ thread_local! {
 }
 
 #[derive(Clone)]
-enum RuntimeState<T: 'static> { Pending(Option<Waker>), Competed(T) }
+enum RuntimeState<T> { Pending(Option<Waker>), Competed(T) }
 
 pub struct RuntimeFuture<T> { id: usize, phantom: PhantomData<T>, }
 pub struct Runtime<T> { future: RefCell<Pin<Box<dyn Future<Output = T>>>>, }
 
-impl<T: Clone + Unpin + 'static> Future for RuntimeFuture<T> {
+impl<T: Clone + 'static> Future for RuntimeFuture<T> {
     type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -45,7 +45,7 @@ impl<T: Clone + Unpin + 'static> Future for RuntimeFuture<T> {
 }
 
 // https://rust-lang.github.io/async-book/02_execution/03_wakeups.html
-impl <T: Clone + 'static> RuntimeFuture<T> {
+impl <T: 'static> RuntimeFuture<T> {
     pub fn new() -> Self {
 
         let state = RuntimeState::<T>::Pending(None);
