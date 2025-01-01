@@ -6,16 +6,16 @@ thread_local! {
 }
 
 #[no_mangle]
-pub fn create_allocation(size: u32) -> u32 {
-    let mut allocation = Vec::with_capacity(size as usize);
-    allocation.resize(size as usize, 0);
+pub fn create_allocation(size: usize) -> usize {
+    let mut allocation = Vec::with_capacity(size);
+    allocation.resize(size, 0);
 
-    ALLOCATIONS.with_borrow_mut(|s| { s.push(allocation); s.len() - 1 }) as u32
+    ALLOCATIONS.with_borrow_mut(|s| { s.push(allocation); s.len() - 1 })
 }
 
 #[no_mangle]
-pub fn get_allocation(allocation_id: u32) -> *const u8 {
-    ALLOCATIONS.with_borrow(|s| s.get(allocation_id as usize).unwrap().as_ptr())
+pub fn get_allocation(allocation_id: usize) -> *const u8 {
+    ALLOCATIONS.with_borrow(|s| s.get(allocation_id).unwrap().as_ptr())
 }
 
 #[cfg(test)]
