@@ -47,7 +47,7 @@ pub fn create_async_callback() -> (ObjectRef, RuntimeFuture<ObjectRef>) {
     return (callback_ref, future);
 }
 
-pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue> + 'static>(code: &str, params_fn: F) -> RuntimeFuture<ObjectRef> {
+pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue>>(code: &str, params_fn: F) -> RuntimeFuture<ObjectRef> {
     let (callback_ref, future) = create_async_callback();
     Js::invoke(code, &params_fn(callback_ref));
     future
