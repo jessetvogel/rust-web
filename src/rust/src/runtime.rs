@@ -17,7 +17,7 @@ thread_local! {
 
 enum RuntimeState<T> { Pending(Option<Waker>), Competed(T) }
 
-pub struct RuntimeFuture<T> { id: u32, state: Rc<RefCell<RuntimeState<T>>>, }
+pub struct RuntimeFuture<T> { id: usize, state: Rc<RefCell<RuntimeState<T>>>, }
 pub struct Runtime<T> { future: RefCell<Pin<Box<dyn Future<Output = T>>>>, }
 
 impl<T: Clone> Future for RuntimeFuture<T> {
@@ -47,21 +47,21 @@ impl <T: 'static> RuntimeFuture<T> {
             s.len() - 1
         });
 
-        Self { id: future_id as u32, state: state_arc }
+        Self { id: future_id, state: state_arc }
     }
 
-    pub fn id(&self) -> u32 { self.id }
+    pub fn id(&self) -> usize { self.id }
 
-    pub fn wake(future_id: u32, result: T) {
+    pub fn wake(future_id: usize, result: T) {
         STATE_MAP.with_borrow_mut(|s| {
-            let future = s[future_id as usize].downcast_mut::<Rc<RefCell<RuntimeState<T>>>>().unwrap();
+            let future = s[future_id].downcast_mut::<Rc<RefCell<RuntimeState<T>>>>().unwrap();
 
             if let RuntimeState::Pending(ref mut waker) = *future.borrow_mut() {
                 if let Some(waker) = waker.as_mut() { waker.to_owned().wake(); }
             }
             *future.borrow_mut() = RuntimeState::Competed(result);
 
-            s.remove(future_id as usize);
+            s.remove(future_id);
         });
     }
 }
