@@ -71,34 +71,34 @@ impl <T: 'static> RuntimeFuture<T> {
 
 impl<T: 'static> Runtime<T> {
 
-    fn poll(task: &Rc<Self>) {
-        let waker = Self::waker(&task);
+    fn poll(runtime: &Rc<Self>) {
+        let waker = Self::waker(&runtime);
         let waker_forget = ManuallyDrop::new(waker);
         let context = &mut Context::from_waker(&waker_forget);
-        let _poll = task.future.borrow_mut().as_mut().poll(context);
+        let _poll = runtime.future.borrow_mut().as_mut().poll(context);
     }
 
-    fn waker(task: &Rc<Self>) -> Waker {
+    fn waker(runtime: &Rc<Self>) -> Waker {
 
         fn clone_fn<T: 'static>(ptr: *const ()) -> RawWaker {
-            let _task = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
-            let _ = ManuallyDrop::new(_task).clone();
+            let _runtime = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
+            let _ = ManuallyDrop::new(_runtime).clone();
 
             RawWaker::new(ptr, waker_vtable::<T>())
         }
         fn wake_fn<T: 'static>(ptr: *const ()) {
-            let _task = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
-            let function_ref = create_callback(move |_| { Runtime::poll(&_task); });
+            let _runtime = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
+            let function_ref = create_callback(move |_| { Runtime::poll(&_runtime); });
             Js::invoke("window.setTimeout({},0)", &[function_ref.into()]);
         }
         fn drop_fn<T>(ptr: *const ()) {
-            let _task = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
-            drop(_task);
+            let _runtime = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
+            drop(_runtime);
         }
         fn waker_vtable<T: 'static>() -> &'static RawWakerVTable {
             &RawWakerVTable::new(clone_fn::<T>, wake_fn::<T>, wake_fn::<T>, drop_fn::<T>)
         }
-        let ptr = &**task as *const _;
+        let ptr = &**runtime as *const _;
         let raw_waker = RawWaker::new(ptr as *const (), waker_vtable::<T>());
         unsafe { Waker::from_raw(raw_waker) }
     }
