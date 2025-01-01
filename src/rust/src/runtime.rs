@@ -1,5 +1,12 @@
 use std::{
-    any::Any, cell::RefCell, future::Future, marker::PhantomData, mem::ManuallyDrop, pin::Pin, rc::Rc, task::{Context, Poll, RawWaker, RawWakerVTable, Waker}
+    any::Any,
+    cell::RefCell,
+    future::Future,
+    marker::PhantomData,
+    mem::ManuallyDrop,
+    pin::Pin,
+    rc::Rc,
+    task::{Context, Poll, RawWaker, RawWakerVTable, Waker}
 };
 
 use crate::callbacks::create_callback;
