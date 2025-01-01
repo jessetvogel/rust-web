@@ -1,7 +1,6 @@
 use std::{
     any::Any,
     cell::RefCell,
-    collections::HashMap,
     future::Future,
     mem::ManuallyDrop,
     pin::Pin,
@@ -13,7 +12,7 @@ use crate::callbacks::create_callback;
 use crate::invoke::Js;
 
 thread_local! {
-    static STATE_MAP: RefCell<HashMap<u32, Box<dyn Any>>> = Default::default(); // Cast: Rc<RefCell<RuntimeState<T>>>
+    static STATE_MAP: RefCell<Vec<Box<dyn Any>>> = Default::default(); // Cast: Rc<RefCell<RuntimeState<T>>>
 }
 
 enum RuntimeState<T> { Pending(Option<Waker>), Competed(T) }
@@ -41,12 +40,11 @@ impl<T: Clone> Future for RuntimeFuture<T> {
 impl <T: 'static> RuntimeFuture<T> {
     pub fn new() -> Self {
 
-        // using `Number.MAX_SAFE_INTEGER` exceeds u32
-        let future_id = Js::invoke("return Math.random() * (2 ** 32)", &[]).to_num().unwrap();
         let state = RuntimeState::Pending(None);
         let state_arc = Rc::new(RefCell::new(state));
-        STATE_MAP.with_borrow_mut(|s| {
-            s.insert(future_id as u32, Box::new(state_arc.clone()));
+        let future_id = STATE_MAP.with_borrow_mut(|s| {
+            s.push(Box::new(state_arc.clone()));
+            s.len() - 1
         });
 
         Self { id: future_id as u32, state: state_arc }
@@ -56,15 +54,14 @@ impl <T: 'static> RuntimeFuture<T> {
 
     pub fn wake(future_id: u32, result: T) {
         STATE_MAP.with_borrow_mut(|s| {
-            let future_any = s.get_mut(&future_id).unwrap();
-            let future = future_any.downcast_mut::<Rc<RefCell<RuntimeState<T>>>>().unwrap();
+            let future = s[future_id as usize].downcast_mut::<Rc<RefCell<RuntimeState<T>>>>().unwrap();
 
             if let RuntimeState::Pending(ref mut waker) = *future.borrow_mut() {
                 if let Some(waker) = waker.as_mut() { waker.to_owned().wake(); }
             }
             *future.borrow_mut() = RuntimeState::Competed(result);
 
-            s.remove(&future_id).unwrap();
+            s.remove(future_id as usize);
         });
     }
 }
