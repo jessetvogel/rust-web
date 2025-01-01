@@ -16,7 +16,6 @@ thread_local! {
     static STATE_MAP: RefCell<Vec<Box<dyn Any>>> = Default::default(); // Cast: RuntimeState<T>
 }
 
-#[derive(Clone)]
 enum RuntimeState<T> { Pending(Option<Waker>), Competed(T) }
 
 pub struct RuntimeFuture<T> { id: usize, phantom: PhantomData<T>, }
@@ -127,13 +126,17 @@ mod tests {
         assert_eq!(future.id, 0);
 
         let future_id = future.id;
-        let state = STATE_MAP.with_borrow_mut(|s| { s[future_id].downcast_mut::<RuntimeState<bool>>().unwrap().to_owned() });
-        assert_eq!(matches!(state, RuntimeState::Pending(None)), true);
+        STATE_MAP.with_borrow_mut(|s| {
+            let state = s[future_id].downcast_mut::<RuntimeState<bool>>().unwrap();
+            assert_eq!(matches!(state, RuntimeState::Pending(None)), true);
+        });
 
         // wake future
         RuntimeFuture::wake(future.id, true);
-        let state = STATE_MAP.with_borrow_mut(|s| { s[future_id].downcast_mut::<RuntimeState<bool>>().unwrap().to_owned() });
-        assert_eq!(matches!(state, RuntimeState::Competed(true)), true);
+        STATE_MAP.with_borrow_mut(|s| {
+            let state = s[future_id].downcast_mut::<RuntimeState<bool>>().unwrap();
+            assert_eq!(matches!(state, RuntimeState::Competed(true)), true);
+        });
 
         // block on future
         let has_run = Rc::new(RefCell::new(false));
