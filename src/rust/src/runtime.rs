@@ -30,19 +30,15 @@ impl<T: Clone + 'static> Future for RuntimeFuture<T> {
         STATE_MAP.with_borrow_mut(|s| {
             let future = s[self.id].downcast_mut::<RuntimeState<T>>().unwrap();
             match future {
-                RuntimeState::Init => {
-                    *future = RuntimeState::Pending(cx.waker().to_owned());
-                    Poll::Pending
-                },
-                RuntimeState::Pending(waker) => {
-                    *waker = cx.waker().to_owned();
-                    Poll::Pending
-                }
                 RuntimeState::Competed(result) => {
                     let poll = Poll::Ready(result.to_owned());
                     s.remove(self.id);
                     poll
                 },
+                _ => {
+                    *future = RuntimeState::Pending(cx.waker().to_owned());
+                    Poll::Pending
+                }
             }
         })
     }
