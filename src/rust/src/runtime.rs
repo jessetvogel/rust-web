@@ -19,7 +19,7 @@ thread_local! {
 #[derive(Clone)]
 enum RuntimeState<T> { Init, Pending(Waker), Competed(T) }
 
-pub struct RuntimeFuture<T> { id: usize, phantom: PhantomData<T>, }
+pub struct RuntimeFuture<T> { pub id: usize, phantom: PhantomData<T>, }
 pub struct Runtime<T> { future: RefCell<Pin<Box<dyn Future<Output = T>>>>, }
 
 impl<T: Clone + 'static> Future for RuntimeFuture<T> {
@@ -52,16 +52,13 @@ impl<T: Clone + 'static> Future for RuntimeFuture<T> {
 impl <T: 'static> RuntimeFuture<T> {
     pub fn new() -> Self {
 
-        let state = RuntimeState::<T>::Init;
         let future_id = STATE_MAP.with_borrow_mut(|s| {
-            s.push(Box::new(state));
+            s.push(Box::new(RuntimeState::<T>::Init));
             s.len() - 1
         });
 
         Self { id: future_id, phantom: PhantomData::default() }
     }
-
-    pub fn id(&self) -> usize { self.id }
 
     pub fn wake(future_id: usize, result: T) {
         STATE_MAP.with_borrow_mut(|s| {

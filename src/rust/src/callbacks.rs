@@ -43,7 +43,7 @@ pub fn handle_callback(callback_id: u32, param: i32) {
 
 pub fn create_async_callback() -> (ObjectRef, RuntimeFuture<ObjectRef>) {
     let future = RuntimeFuture::new();
-    let future_id = future.id();
+    let future_id = future.id;
     let callback_ref = create_callback(move |e| { RuntimeFuture::wake(future_id, e); });
     return (callback_ref, future);
 }
