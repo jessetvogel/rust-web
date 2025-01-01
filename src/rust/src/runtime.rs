@@ -119,16 +119,15 @@ mod tests {
         let future = RuntimeFuture::new();
         assert_eq!(future.id, 0);
 
-        let future_id = future.id;
         STATE_MAP.with_borrow_mut(|s| {
-            let state = s[future_id].downcast_mut::<RuntimeState<bool>>().unwrap();
+            let state = s[future.id].downcast_mut::<RuntimeState<bool>>().unwrap();
             assert_eq!(matches!(state, RuntimeState::Init), true);
         });
 
         // wake future
         RuntimeFuture::wake(future.id, true);
         STATE_MAP.with_borrow_mut(|s| {
-            let state = s[future_id].downcast_mut::<RuntimeState<bool>>().unwrap();
+            let state = s[future.id].downcast_mut::<RuntimeState<bool>>().unwrap();
             assert_eq!(matches!(state, RuntimeState::Competed(true)), true);
         });
 
