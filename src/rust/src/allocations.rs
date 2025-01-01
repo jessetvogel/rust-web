@@ -7,10 +7,7 @@ thread_local! {
 
 #[no_mangle]
 pub fn create_allocation(size: usize) -> usize {
-    let mut allocation = Vec::with_capacity(size);
-    allocation.resize(size, 0);
-
-    ALLOCATIONS.with_borrow_mut(|s| { s.push(allocation); s.len() - 1 })
+    ALLOCATIONS.with_borrow_mut(|s| { s.push(vec![0; size]); s.len() - 1 })
 }
 
 #[no_mangle]
