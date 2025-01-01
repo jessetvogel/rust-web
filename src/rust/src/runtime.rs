@@ -16,22 +16,24 @@ thread_local! {
     static STATE_MAP: RefCell<HashMap<u32, Box<dyn Any>>> = Default::default(); // Cast: Rc<RefCell<RuntimeState<T>>>
 }
 
-pub struct RuntimeState<T> { completed: bool, waker: Option<Waker>, result: Option<T>, }
+enum RuntimeState<T> { Pending(Option<Waker>), Competed(T) }
+
 pub struct RuntimeFuture<T> { id: u32, state: Rc<RefCell<RuntimeState<T>>>, }
 pub struct Runtime<T> { future: RefCell<Pin<Box<dyn Future<Output = T>>>>, }
 
-impl<T> Future for RuntimeFuture<T> {
+impl<T: Clone> Future for RuntimeFuture<T> {
     type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let mut future = self.state.borrow_mut();
-        let poll = if future.completed && future.result.is_some() {
-            Poll::Ready(future.result.take().unwrap())
-        } else {
-            future.waker = Some(cx.waker().to_owned());
-            Poll::Pending
-        };
-        return poll;
+        match *self.state.borrow_mut() {
+            RuntimeState::Pending(ref mut waker) => {
+                *waker = Some(cx.waker().to_owned());
+                Poll::Pending
+            },
+            RuntimeState::Competed(ref result) => {
+                Poll::Ready(result.to_owned())
+            },
+        }
     }
 }
 
@@ -41,7 +43,7 @@ impl <T: 'static> RuntimeFuture<T> {
 
         // using `Number.MAX_SAFE_INTEGER` exceeds u32
         let future_id = Js::invoke("return Math.random() * (2 ** 32)", &[]).to_num().unwrap();
-        let state = RuntimeState { completed: false, waker: None, result: None, };
+        let state = RuntimeState::Pending(None);
         let state_arc = Rc::new(RefCell::new(state));
         STATE_MAP.with_borrow_mut(|s| {
             s.insert(future_id as u32, Box::new(state_arc.clone()));
@@ -56,11 +58,12 @@ impl <T: 'static> RuntimeFuture<T> {
         STATE_MAP.with_borrow_mut(|s| {
             let future_any = s.get_mut(&future_id).unwrap();
             let future = future_any.downcast_mut::<Rc<RefCell<RuntimeState<T>>>>().unwrap();
-            let mut p = future.borrow_mut();
-            if let Some(waker) = p.waker.take() { waker.wake(); }
-            p.completed = true;
-            p.result = Some(result);
-            drop(p);
+
+            if let RuntimeState::Pending(ref mut waker) = *future.borrow_mut() {
+                if let Some(waker) = waker.as_mut() { waker.to_owned().wake(); }
+            }
+            *future.borrow_mut() = RuntimeState::Competed(result);
+
             s.remove(&future_id).unwrap();
         });
     }
@@ -119,15 +122,11 @@ mod tests {
         // create future
         let future = RuntimeFuture::new();
         assert_eq!(future.id, 0);
-        assert_eq!(future.state.borrow().result, None);
-        assert_eq!(future.state.borrow().completed, false);
-        assert_eq!(future.state.borrow().waker.is_some(), false);
+        assert_eq!(matches!(*future.state.borrow(), RuntimeState::Pending(None)), true);
 
         // wake future
         RuntimeFuture::wake(future.id, true);
-        assert_eq!(future.state.borrow().result, Some(true));
-        assert_eq!(future.state.borrow().completed, true);
-        assert_eq!(future.state.borrow().waker.is_some(), false);
+        assert_eq!(matches!(*future.state.borrow(), RuntimeState::Competed(true)), true);
 
         // block on future
         let has_run = Rc::new(RefCell::new(false));
