@@ -66,7 +66,7 @@ impl <T: 'static> RuntimeFuture<T> {
 
 impl<T: 'static> Runtime<T> {
 
-    fn poll(future: &Rc<RefCell<Pin<Box<dyn Future<Output = T>>>>>) {
+    fn poll(future: &FutureCell<T>) {
         let waker = Self::waker(&future);
         let waker_forget = ManuallyDrop::new(waker);
         let context = &mut Context::from_waker(&waker_forget);
