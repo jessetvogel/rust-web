@@ -21,7 +21,7 @@ enum RuntimeState<T> { Init, Pending(Waker), Competed(T) }
 pub struct RuntimeFuture<T> { pub id: usize, phantom: PhantomData<T>, }
 pub struct Runtime<T> { phantom: PhantomData<T> }
 
-type FutureCell<T> = Rc::<RefCell<Pin<Box<dyn Future<Output = T>>>>>;
+type FutureRc<T> = Rc::<RefCell<Pin<Box<dyn Future<Output = T>>>>>;
 
 impl<T: Clone + 'static> Future for RuntimeFuture<T> {
     type Output = T;
@@ -66,33 +66,33 @@ impl <T: 'static> RuntimeFuture<T> {
 
 impl<T: 'static> Runtime<T> {
 
-    fn poll(future: &FutureCell<T>) {
-        let waker = Self::waker(&future);
+    fn poll(future_rc: &FutureRc<T>) {
+        let waker = Self::waker(&future_rc);
         let waker_forget = ManuallyDrop::new(waker);
         let context = &mut Context::from_waker(&waker_forget);
-        let _poll = future.borrow_mut().as_mut().poll(context);
+        let _poll = future_rc.borrow_mut().as_mut().poll(context);
     }
 
-    fn waker(future: &FutureCell::<T>) -> Waker {
+    fn waker(future_rc: &FutureRc::<T>) -> Waker {
 
         fn clone_fn<T: 'static>(ptr: *const ()) -> RawWaker {
-            let _future = unsafe { FutureCell::<T>::from_raw(ptr as *const _) };
+            let _future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
             let _ = ManuallyDrop::new(_future).clone();
             RawWaker::new(ptr, waker_vtable::<T>())
         }
         fn wake_fn<T: 'static>(ptr: *const ()) {
-            let _future = unsafe { FutureCell::<T>::from_raw(ptr as *const _) };
+            let _future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
             let function_ref = create_callback(move |_| { Runtime::poll(&_future); });
             Js::invoke("window.setTimeout({},0)", &[function_ref.into()]);
         }
         fn drop_fn<T>(ptr: *const ()) {
-            let _future = unsafe { FutureCell::<T>::from_raw(ptr as *const _) };
+            let _future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
             drop(_future);
         }
         fn waker_vtable<T: 'static>() -> &'static RawWakerVTable {
             &RawWakerVTable::new(clone_fn::<T>, wake_fn::<T>, wake_fn::<T>, drop_fn::<T>)
         }
-        let waker = RawWaker::new(&**future as *const _ as *const (), waker_vtable::<T>());
+        let waker = RawWaker::new(&**future_rc as *const _ as *const (), waker_vtable::<T>());
         unsafe { Waker::from_raw(waker) }
     }
 
