@@ -19,7 +19,7 @@ thread_local! {
 enum RuntimeState<T> { Init, Pending(Waker), Competed(T) }
 
 pub struct RuntimeFuture<T> { pub id: usize, phantom: PhantomData<T>, }
-pub struct Runtime<T> { future: RefCell<Pin<Box<dyn Future<Output = T>>>>, }
+pub struct Runtime<T> { phantom: PhantomData<T> }
 
 impl<T: Clone + 'static> Future for RuntimeFuture<T> {
     type Output = T;
@@ -64,14 +64,14 @@ impl <T: 'static> RuntimeFuture<T> {
 
 impl<T: 'static> Runtime<T> {
 
-    fn poll(runtime: &Rc<Self>) {
+    fn poll(runtime: &Rc<RefCell<Pin<Box<dyn Future<Output = T>>>>>) {
         let waker = Self::waker(&runtime);
         let waker_forget = ManuallyDrop::new(waker);
         let context = &mut Context::from_waker(&waker_forget);
-        let _poll = runtime.future.borrow_mut().as_mut().poll(context);
+        let _poll = runtime.borrow_mut().as_mut().poll(context);
     }
 
-    fn waker(runtime: &Rc<Self>) -> Waker {
+    fn waker(runtime: &Rc<RefCell<Pin<Box<dyn Future<Output = T>>>>>) -> Waker {
 
         fn clone_fn<T: 'static>(ptr: *const ()) -> RawWaker {
             let _runtime = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
@@ -80,7 +80,7 @@ impl<T: 'static> Runtime<T> {
             RawWaker::new(ptr, waker_vtable::<T>())
         }
         fn wake_fn<T: 'static>(ptr: *const ()) {
-            let _runtime = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
+            let _runtime = unsafe { Rc::<RefCell<Pin<Box<dyn Future<Output = T>>>>>::from_raw(ptr as *const _) };
             let function_ref = create_callback(move |_| { Runtime::poll(&_runtime); });
             Js::invoke("window.setTimeout({},0)", &[function_ref.into()]);
         }
@@ -97,7 +97,7 @@ impl<T: 'static> Runtime<T> {
     }
 
     pub fn block_on(future: impl Future<Output = T> + 'static) {
-        let runtime = Self { future: RefCell::new(Box::pin(future)) };
+        let runtime = RefCell::new(Box::pin(future));
         Self::poll(&Rc::new(runtime));
     }
 }
