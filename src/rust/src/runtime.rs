@@ -64,14 +64,14 @@ impl <T: 'static> RuntimeFuture<T> {
 
 impl<T: 'static> Runtime<T> {
 
-    fn poll(runtime: &Rc<RefCell<Pin<Box<dyn Future<Output = T>>>>>) {
-        let waker = Self::waker(&runtime);
+    fn poll(future: &Rc<RefCell<Pin<Box<dyn Future<Output = T>>>>>) {
+        let waker = Self::waker(&future);
         let waker_forget = ManuallyDrop::new(waker);
         let context = &mut Context::from_waker(&waker_forget);
-        let _poll = runtime.borrow_mut().as_mut().poll(context);
+        let _poll = future.borrow_mut().as_mut().poll(context);
     }
 
-    fn waker(runtime: &Rc<RefCell<Pin<Box<dyn Future<Output = T>>>>>) -> Waker {
+    fn waker(future: &Rc<RefCell<Pin<Box<dyn Future<Output = T>>>>>) -> Waker {
 
         fn clone_fn<T: 'static>(ptr: *const ()) -> RawWaker {
             let _runtime = unsafe { Rc::<Runtime<T>>::from_raw(ptr as *const _) };
@@ -91,14 +91,13 @@ impl<T: 'static> Runtime<T> {
         fn waker_vtable<T: 'static>() -> &'static RawWakerVTable {
             &RawWakerVTable::new(clone_fn::<T>, wake_fn::<T>, wake_fn::<T>, drop_fn::<T>)
         }
-        let ptr = &**runtime as *const _;
+        let ptr = &**future as *const _;
         let raw_waker = RawWaker::new(ptr as *const (), waker_vtable::<T>());
         unsafe { Waker::from_raw(raw_waker) }
     }
 
     pub fn block_on(future: impl Future<Output = T> + 'static) {
-        let runtime = RefCell::new(Box::pin(future));
-        Self::poll(&Rc::new(runtime));
+        Self::poll(&Rc::new(RefCell::new(Box::pin(future))));
     }
 }
 
