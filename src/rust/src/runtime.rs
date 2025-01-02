@@ -21,7 +21,7 @@ enum RuntimeState<T> { Init, Pending(Waker), Competed(T) }
 pub struct RuntimeFuture<T> { pub id: usize, phantom: PhantomData<T>, }
 pub struct Runtime<T> { phantom: PhantomData<T> }
 
-type FutureRc<T> = Rc::<RefCell<Pin<Box<dyn Future<Output = T>>>>>;
+type FutureRc<T> = Rc<RefCell<Pin<Box<dyn Future<Output = T>>>>>;
 
 impl<T: Clone + 'static> Future for RuntimeFuture<T> {
     type Output = T;
