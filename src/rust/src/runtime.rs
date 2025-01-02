@@ -76,18 +76,18 @@ impl<T: 'static> Runtime<T> {
     fn waker(future_rc: &FutureRc::<T>) -> Waker {
 
         fn clone_fn<T: 'static>(ptr: *const ()) -> RawWaker {
-            let _future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
-            let _ = ManuallyDrop::new(_future).clone();
+            let future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
+            let _ = ManuallyDrop::new(future).clone();
             RawWaker::new(ptr, waker_vtable::<T>())
         }
         fn wake_fn<T: 'static>(ptr: *const ()) {
-            let _future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
-            let function_ref = create_callback(move |_| { Runtime::poll(&_future); });
+            let future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
+            let function_ref = create_callback(move |_| { Runtime::poll(&future); });
             Js::invoke("window.setTimeout({},0)", &[function_ref.into()]);
         }
         fn drop_fn<T>(ptr: *const ()) {
-            let _future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
-            drop(_future);
+            let future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
+            drop(future);
         }
         fn waker_vtable<T: 'static>() -> &'static RawWakerVTable {
             &RawWakerVTable::new(clone_fn::<T>, wake_fn::<T>, wake_fn::<T>, drop_fn::<T>)
