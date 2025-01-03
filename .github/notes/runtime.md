@@ -3,21 +3,21 @@
 ### Runtime flow
 
 ```js
-// 1. register a callback and invoke `fetch` that triggers the callback when is done
+// 1. Register a callback and invoke `fetch` that triggers the callback when is finishes
 [Log] create_async_callback future_id=0 -> [Log] create_callback id=0 && [Log] js_invoke `fetch` id=0
 
-// 2. the `block_on` method calls the `poll` on the future that set `FutureState` to `Pending(waker)`
+// 2. Use the `block_on` method that calls `poll` on the future that in turn sets `FutureState` to `Pending(waker)`
 [Log] runtime block on -> [Log] future poll -> [Log] poll future pending
 
-// 3. when the `fetch` callback is done, schedule a `setTimeout(0)` callback that calls future poll
+// 3. When the `fetch` callback is triggered, schedule a `setTimeout(0)` callback that calls future poll
 [Log] handle_callback id=0 -> [Log] waker wake -> [Log] create_callback id=2  && [Log] js_invoke `setTimeout(0)` id=0
 
-// 4. when the `setTimeout(0)` callback is done, resolve future to `Poll::Ready(T)`
+// 4. When the `setTimeout(0)` callback is triggered, resolve future to `Poll::Ready(T)`
 [Log] handle_callback id=0 -> [Log] future poll -> [Log] poll future completed
 ```
 
 
-### Runtime quirks
+### Implementation quirks
 
 1. Updating `FutureState` in 2 different places
   - It's updated in the `FutureTask::wake` function
