@@ -1,5 +1,5 @@
 
-use crate::runtime::RuntimeFuture;
+use crate::runtime::FutureTask;
 use crate::invoke::{Js, JsValue, ObjectRef};
 
 use std::collections::HashMap;
@@ -40,14 +40,14 @@ pub fn handle_callback(callback_id: u32, param: i32) {
     Js::deallocate(object_ref);
 }
 
-pub fn create_async_callback() -> (ObjectRef, RuntimeFuture<ObjectRef>) {
-    let future = RuntimeFuture::new();
+pub fn create_async_callback() -> (ObjectRef, FutureTask<ObjectRef>) {
+    let future = FutureTask::new();
     let future_id = future.id;
-    let callback_ref = create_callback(move |e| { RuntimeFuture::wake(future_id, e); });
+    let callback_ref = create_callback(move |e| { FutureTask::wake(future_id, e); });
     return (callback_ref, future);
 }
 
-pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue>>(code: &str, params_fn: F) -> RuntimeFuture<ObjectRef> {
+pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue>>(code: &str, params_fn: F) -> FutureTask<ObjectRef> {
     let (callback_ref, future) = create_async_callback();
     Js::invoke(code, &params_fn(callback_ref));
     future

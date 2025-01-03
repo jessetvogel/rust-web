@@ -16,14 +16,14 @@ thread_local! {
     static FUTURE_STATE_LIST: RefCell<Vec<Box<dyn Any>>> = Default::default(); // Cast: FutureState<T>
 }
 
-enum FutureState<T> { Init, Pending(Waker), Competed(T) }
+pub enum FutureState<T> { Init, Pending(Waker), Competed(T) }
+pub struct FutureTask<T> { pub id: usize, phantom: PhantomData<T>, }
 
-pub struct RuntimeFuture<T> { pub id: usize, phantom: PhantomData<T>, }
 pub struct Runtime<T> { phantom: PhantomData<T> }
 
 type FutureRc<T> = Rc<RefCell<Pin<Box<dyn Future<Output = T>>>>>;
 
-impl<T: Clone + 'static> Future for RuntimeFuture<T> {
+impl<T: Clone + 'static> Future for FutureTask<T> {
     type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -45,7 +45,7 @@ impl<T: Clone + 'static> Future for RuntimeFuture<T> {
     }
 }
 
-impl <T: 'static> RuntimeFuture<T> {
+impl <T: 'static> FutureTask<T> {
     pub fn new() -> Self {
         FUTURE_STATE_LIST.with_borrow_mut(|s| {
             s.push(Box::new(FutureState::<T>::Init));
@@ -111,7 +111,7 @@ mod tests {
     fn test_await() {
 
         // create future
-        let future = RuntimeFuture::new();
+        let future = FutureTask::new();
         assert_eq!(future.id, 0);
 
         FUTURE_STATE_LIST.with_borrow_mut(|s| {
@@ -120,7 +120,7 @@ mod tests {
         });
 
         // wake future
-        RuntimeFuture::wake(future.id, true);
+        FutureTask::wake(future.id, true);
         FUTURE_STATE_LIST.with_borrow_mut(|s| {
             let state = s[future.id].downcast_mut::<FutureState<bool>>().unwrap();
             assert_eq!(matches!(state, FutureState::Competed(true)), true);
