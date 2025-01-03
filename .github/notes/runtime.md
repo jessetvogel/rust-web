@@ -24,11 +24,6 @@
   - It's updated in the `FutureTask::wake` function
   - It's also updated in the `Future` trait impl
 
-2. Using the `thread_local` macro to access the future
-  - The `thread_local` macro is used for shared ownership of the future
-  - It stores the `FutureState` that contains the `waker` object
-  - The `FutureTask` is not moved and the `.await` syntax still works
-
-3. (Maybe necessary) Calling `poll` in `wake_fn` through Javascript
+2. (Maybe necessary) Calling `poll` in `wake_fn` through Javascript
   - The `wake_fun` function creates a callback that does `Runtime::poll(&future)`
   - It schedules it immediately with `setTimeout(0)` instead of directly calling
