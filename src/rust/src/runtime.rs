@@ -45,7 +45,7 @@ impl Runtime {
     }
 
     // https://rust-lang.github.io/async-book/02_execution/03_wakeups.html
-    fn waker<T: 'static>(future_rc: &FutureRc::<T>) -> Waker {
+    fn waker<T: 'static>(future_rc: &FutureRc<T>) -> Waker {
 
         fn clone_fn<T: 'static>(ptr: *const ()) -> RawWaker {
             let future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
