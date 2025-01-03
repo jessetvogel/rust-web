@@ -1,7 +1,6 @@
 use std::{
     cell::RefCell,
     future::Future,
-    marker::PhantomData,
     mem::ManuallyDrop,
     pin::Pin,
     rc::Rc,
@@ -14,7 +13,7 @@ use crate::invoke::Js;
 pub enum FutureState<T> { Init, Pending(Waker), Competed(T) }
 pub struct FutureTask<T> { pub state: Rc<RefCell<FutureState<T>>> }
 
-pub struct Runtime<T> { phantom: PhantomData<T> }
+pub struct Runtime {}
 
 type FutureRc<T> = Rc<RefCell<Pin<Box<dyn Future<Output = T>>>>>;
 
@@ -48,9 +47,9 @@ impl <T> FutureTask<T> {
     }
 }
 
-impl<T: 'static> Runtime<T> {
+impl Runtime {
 
-    fn poll(future_rc: &FutureRc<T>) {
+    fn poll<T: 'static>(future_rc: &FutureRc<T>) {
         let waker = Self::waker(&future_rc);
         let waker_forget = ManuallyDrop::new(waker);
         let context = &mut Context::from_waker(&waker_forget);
@@ -58,7 +57,7 @@ impl<T: 'static> Runtime<T> {
     }
 
     // https://rust-lang.github.io/async-book/02_execution/03_wakeups.html
-    fn waker(future_rc: &FutureRc::<T>) -> Waker {
+    fn waker<T: 'static>(future_rc: &FutureRc::<T>) -> Waker {
 
         fn clone_fn<T: 'static>(ptr: *const ()) -> RawWaker {
             let future = unsafe { FutureRc::<T>::from_raw(ptr as *const _) };
@@ -81,7 +80,7 @@ impl<T: 'static> Runtime<T> {
         unsafe { Waker::from_raw(waker) }
     }
 
-    pub fn block_on(future: impl Future<Output = T> + 'static) {
+    pub fn block_on<T: 'static>(future: impl Future<Output = T> + 'static) {
         Self::poll(&Rc::new(RefCell::new(Box::pin(future))));
     }
 }
