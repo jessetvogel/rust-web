@@ -1,9 +1,10 @@
 
-use crate::runtime::FutureTask;
+use crate::runtime::{FutureState, FutureTask};
 use crate::invoke::{Js, JsValue, ObjectRef};
 
 use std::collections::HashMap;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 thread_local! {
     pub static CALLBACK_HANDLERS: RefCell<HashMap<ObjectRef, Box<dyn FnMut(ObjectRef) + 'static>>> = Default::default();
@@ -41,9 +42,13 @@ pub fn handle_callback(callback_id: u32, param: i32) {
 }
 
 pub fn create_async_callback() -> (ObjectRef, FutureTask<ObjectRef>) {
-    let future = FutureTask::new();
+    let future = FutureTask { state: Rc::new(RefCell::new(FutureState::Init)) };
     let future_state = future.state.clone();
-    let callback_ref = create_callback(move |e| { FutureTask::ready(&future_state, e); });
+    let callback_ref = create_callback(move |e| {
+        let mut future = future_state.borrow_mut();
+        if let FutureState::Pending(ref mut waker) = &mut *future { waker.to_owned().wake(); }
+        *future = FutureState::Ready(e);
+    });
     return (callback_ref, future);
 }
 

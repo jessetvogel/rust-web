@@ -35,18 +35,6 @@ impl<T: Clone + 'static> Future for FutureTask<T> {
     }
 }
 
-impl <T> FutureTask<T> {
-    pub fn new() -> Self {
-        Self { state: Rc::new(RefCell::new(FutureState::<T>::Init)) }
-    }
-
-    pub fn ready(state: &Rc<RefCell<FutureState<T>>>, result: T) {
-        let mut future = state.borrow_mut();
-        if let FutureState::Pending(ref mut waker) = &mut *future { waker.to_owned().wake(); }
-        *future = FutureState::Ready(result);
-    }
-}
-
 impl Runtime {
 
     fn poll<T: 'static>(future_rc: &FutureRc<T>) {
@@ -95,12 +83,12 @@ mod tests {
     fn test_await() {
 
         // create future
-        let future = FutureTask::new();
+        let future = FutureTask { state: Rc::new(RefCell::new(FutureState::Init)) };
         let future_state = future.state.clone();
         assert_eq!(matches!(*future_state.borrow(), FutureState::Init), true);
 
-        // wake future
-        FutureTask::ready(&future_state, true);
+        // set to ready
+        *future_state.borrow_mut() = FutureState::Ready(true);
         assert_eq!(matches!(*future_state.borrow(), FutureState::Ready(true)), true);
 
         // block on future
