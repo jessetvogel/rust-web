@@ -6,7 +6,8 @@
 // 1. Register a callback and invoke `fetch` that triggers the callback when is finishes
 [Log] create_async_callback future_id=0 -> [Log] create_callback id=0 && [Log] js_invoke `fetch` id=0
 
-// 2. Use the `block_on` method that calls `poll` on the future that in turn sets `FutureState` to `Pending(waker)`
+// 2. Use the `block_on` method and `await` the future inside
+// When the future is awaited it calls `poll` function that sets `FutureState` to `Pending(waker)`
 [Log] runtime block on -> [Log] future poll -> [Log] poll future pending
 
 // 3. When the `fetch` callback is triggered, schedule a `setTimeout(0)` callback that calls future poll
