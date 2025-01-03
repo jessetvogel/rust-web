@@ -43,8 +43,10 @@ impl <T> FutureTask<T> {
 
     pub fn wake(map: &Rc<RefCell<FutureState<T>>>, result: T) {
         let mut future = map.borrow_mut();
-        if let FutureState::Pending(ref mut waker) = &mut *future { waker.to_owned().wake(); }
-        *future = FutureState::Competed(result);
+        if let FutureState::Pending(ref mut waker) = &mut *future {
+            waker.to_owned().wake();
+            *future = FutureState::Competed(result);
+        }
     }
 }
 
