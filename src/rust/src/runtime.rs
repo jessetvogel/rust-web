@@ -1,5 +1,4 @@
 use std::{
-    any::Any,
     cell::RefCell,
     future::Future,
     marker::PhantomData,
@@ -13,7 +12,7 @@ use crate::callbacks::create_callback;
 use crate::invoke::Js;
 
 pub enum FutureState<T> { Init, Pending(Waker), Competed(T) }
-pub struct FutureTask<T> { phantom: PhantomData<T>, pub map: Rc<RefCell<Box<dyn Any>>> }
+pub struct FutureTask<T> { pub map: Rc<RefCell<FutureState<T>>> }
 
 pub struct Runtime<T> { phantom: PhantomData<T> }
 
@@ -24,9 +23,8 @@ impl<T: Clone + 'static> Future for FutureTask<T> {
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
 
-        let mut map = self.map.borrow_mut();
-        let future = map.downcast_mut::<FutureState<T>>().unwrap();
-        match future {
+        let mut future = self.map.borrow_mut();
+        match &*future {
             FutureState::Competed(result) => {
                 Poll::Ready(result.to_owned())
             },
@@ -40,15 +38,15 @@ impl<T: Clone + 'static> Future for FutureTask<T> {
 
 impl <T: 'static> FutureTask<T> {
     pub fn new() -> Self {
-        Self { phantom: PhantomData::default(), map: Rc::new(RefCell::new(Box::new(FutureState::<T>::Init))) }
+        Self { map: Rc::new(RefCell::new(FutureState::<T>::Init)) }
     }
 
     // https://rust-lang.github.io/async-book/02_execution/03_wakeups.html
-    pub fn wake(map: &Rc<RefCell<Box<dyn Any>>>, result: T) {
-        let mut map = map.borrow_mut();
-        let future = map.downcast_mut::<FutureState<T>>().unwrap();
+    pub fn wake(map: &Rc<RefCell<FutureState<T>>>, result: T) {
+        let mut future = map.borrow_mut();
+        // let future = map.downcast_mut::<FutureState<T>>().unwrap();
 
-        if let FutureState::Pending(ref mut waker) = future { waker.to_owned().wake(); }
+        if let FutureState::Pending(ref mut waker) = &mut *future { waker.to_owned().wake(); }
         *future = FutureState::Competed(result);
     }
 }
@@ -102,19 +100,11 @@ mod tests {
         // create future
         let future = FutureTask::new();
         let future_map = future.map.clone();
-        let mut future_borrow = future_map.borrow_mut();
-        let state = future_borrow.downcast_mut::<FutureState<bool>>().unwrap();
-        assert_eq!(matches!(state, FutureState::Init), true);
-        drop(future_borrow);
+        assert_eq!(matches!(*future_map.borrow(), FutureState::Init), true);
 
         // wake future
-        let future_map = future.map.clone();
         FutureTask::wake(&future_map, true);
-        let future_map = future.map.clone();
-        let mut future_borrow = future_map.borrow_mut();
-        let state = future_borrow.downcast_mut::<FutureState<bool>>().unwrap();
-        assert_eq!(matches!(state, FutureState::Competed(true)), true);
-        drop(future_borrow);
+        assert_eq!(matches!(*future_map.borrow(), FutureState::Competed(true)), true);
 
         // block on future
         let has_run = Rc::new(RefCell::new(false));
