@@ -28,5 +28,6 @@
   - It stores the `FutureState` that contains the `waker` object
   - The `FutureTask` is not moved and the `.await` syntax still works
 
-3. (Maybe necessary) Calling the `poll` in `wake_fn` through Javascript
-  - Using `setTimeout(0)` instead of directly calling `Runtime::poll(&future)`
+3. (Maybe necessary) Calling `poll` in `wake_fn` through Javascript
+  - The `wake_fun` function creates a callback that does `Runtime::poll(&future)`
+  - It schedules it immediately with `setTimeout(0)` instead of directly calling
