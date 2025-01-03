@@ -43,11 +43,11 @@ pub fn handle_callback(callback_id: u32, param: i32) {
 
 pub fn create_async_callback() -> (ObjectRef, FutureTask<ObjectRef>) {
     let future = FutureTask { state: Rc::new(RefCell::new(FutureState::Init)) };
-    let future_state = future.state.clone();
+    let state_clone = future.state.clone();
     let callback_ref = create_callback(move |e| {
-        let mut future = future_state.borrow_mut();
-        if let FutureState::Pending(ref mut waker) = &mut *future { waker.to_owned().wake(); }
-        *future = FutureState::Ready(e);
+        let mut future_state = state_clone.borrow_mut();
+        if let FutureState::Pending(ref mut waker) = &mut *future_state { waker.to_owned().wake(); }
+        *future_state = FutureState::Ready(e);
     });
     return (callback_ref, future);
 }

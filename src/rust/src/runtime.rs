@@ -22,13 +22,13 @@ impl<T: Clone + 'static> Future for FutureTask<T> {
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
 
-        let mut future = self.state.borrow_mut();
-        match &*future {
+        let mut future_state = self.state.borrow_mut();
+        match &*future_state {
             FutureState::Ready(result) => {
                 Poll::Ready(result.to_owned())
             },
             _ => {
-                *future = FutureState::Pending(cx.waker().to_owned());
+                *future_state = FutureState::Pending(cx.waker().to_owned());
                 Poll::Pending
             }
         }
