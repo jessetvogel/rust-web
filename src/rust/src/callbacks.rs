@@ -43,7 +43,7 @@ pub fn handle_callback(callback_id: u32, param: i32) {
 pub fn create_async_callback() -> (ObjectRef, FutureTask<ObjectRef>) {
     let future = FutureTask::new();
     let future_state = future.state.clone();
-    let callback_ref = create_callback(move |e| { FutureTask::wake(&future_state, e); });
+    let callback_ref = create_callback(move |e| { FutureTask::ready(&future_state, e); });
     return (callback_ref, future);
 }
 

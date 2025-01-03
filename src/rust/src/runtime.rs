@@ -10,7 +10,7 @@ use std::{
 use crate::callbacks::create_callback;
 use crate::invoke::Js;
 
-pub enum FutureState<T> { Init, Pending(Waker), Competed(T) }
+pub enum FutureState<T> { Init, Pending(Waker), Ready(T) }
 pub struct FutureTask<T> { pub state: Rc<RefCell<FutureState<T>>> }
 
 pub struct Runtime {}
@@ -24,7 +24,7 @@ impl<T: Clone + 'static> Future for FutureTask<T> {
 
         let mut future = self.state.borrow_mut();
         match &*future {
-            FutureState::Competed(result) => {
+            FutureState::Ready(result) => {
                 Poll::Ready(result.to_owned())
             },
             _ => {
@@ -40,10 +40,10 @@ impl <T> FutureTask<T> {
         Self { state: Rc::new(RefCell::new(FutureState::<T>::Init)) }
     }
 
-    pub fn wake(map: &Rc<RefCell<FutureState<T>>>, result: T) {
-        let mut future = map.borrow_mut();
+    pub fn ready(state: &Rc<RefCell<FutureState<T>>>, result: T) {
+        let mut future = state.borrow_mut();
         if let FutureState::Pending(ref mut waker) = &mut *future { waker.to_owned().wake(); }
-        *future = FutureState::Competed(result);
+        *future = FutureState::Ready(result);
     }
 }
 
@@ -100,8 +100,8 @@ mod tests {
         assert_eq!(matches!(*future_state.borrow(), FutureState::Init), true);
 
         // wake future
-        FutureTask::wake(&future_state, true);
-        assert_eq!(matches!(*future_state.borrow(), FutureState::Competed(true)), true);
+        FutureTask::ready(&future_state, true);
+        assert_eq!(matches!(*future_state.borrow(), FutureState::Ready(true)), true);
 
         // block on future
         let has_run = Rc::new(RefCell::new(false));
