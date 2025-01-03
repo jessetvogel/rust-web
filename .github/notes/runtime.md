@@ -1,6 +1,7 @@
 
 
 ### Runtime flow
+
 ```js
 // 1. register a callback and invoke `fetch` that triggers the callback when is done
 [Log] create_async_callback future_id=0 -> [Log] create_callback id=0 && [Log] js_invoke `fetch` id=0
@@ -15,12 +16,17 @@
 [Log] handle_callback id=0 -> [Log] future poll -> [Log] poll future completed
 ```
 
-### Notes about `thread_local`
-
-- The `thread_local` macro has `FutureState` that has the `waker` object (used to trigger the future's `poll` method)
-- Since `FutureTask` is moved to `thread_local`, it's still owned and the `.await` syntax still works
 
 ### Runtime quirks
-1. Updating the `FutureState` in both `FutureTask::wake` and in the `Future` trait impl
-2. Using `thread_local` instead of accessing the future directly
-3. (Maybe necessary) Using `setTimeout(0)` instead of directly calling `Runtime::poll(&future)`
+
+1. Updating `FutureState` in 2 different places
+  - It's updated in the `FutureTask::wake` function
+  - It's also updated in the `Future` trait impl
+
+2. Using the `thread_local` macro to access the future
+  - The `thread_local` macro is used for shared ownership of the future
+  - It stores the `FutureState` that contains the `waker` object
+  - The `FutureTask` is not moved and the `.await` syntax still works
+
+3. (Maybe necessary) Calling the `poll` in `wake_fn` through Javascript
+  - Using `setTimeout(0)` instead of directly calling `Runtime::poll(&future)`
