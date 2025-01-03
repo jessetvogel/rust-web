@@ -12,12 +12,8 @@ use std::{
 use crate::callbacks::create_callback;
 use crate::invoke::Js;
 
-thread_local! {
-    static FUTURE_STATE_LIST: RefCell<Vec<Box<dyn Any>>> = Default::default(); // Cast: FutureState<T>
-}
-
 pub enum FutureState<T> { Init, Pending(Waker), Competed(T) }
-pub struct FutureTask<T> { pub id: usize, phantom: PhantomData<T>, }
+pub struct FutureTask<T> { phantom: PhantomData<T>, pub map: Rc<RefCell<Box<dyn Any>>> }
 
 pub struct Runtime<T> { phantom: PhantomData<T> }
 
@@ -28,39 +24,32 @@ impl<T: Clone + 'static> Future for FutureTask<T> {
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
 
-        FUTURE_STATE_LIST.with_borrow_mut(|s| {
-            let future = s[self.id].downcast_mut::<FutureState<T>>().unwrap();
-            match future {
-                FutureState::Competed(result) => {
-                    let poll = Poll::Ready(result.to_owned());
-                    s.remove(self.id);
-                    poll
-                },
-                _ => {
-                    *future = FutureState::Pending(cx.waker().to_owned());
-                    Poll::Pending
-                }
+        let mut map = self.map.borrow_mut();
+        let future = map.downcast_mut::<FutureState<T>>().unwrap();
+        match future {
+            FutureState::Competed(result) => {
+                Poll::Ready(result.to_owned())
+            },
+            _ => {
+                *future = FutureState::Pending(cx.waker().to_owned());
+                Poll::Pending
             }
-        })
+        }
     }
 }
 
 impl <T: 'static> FutureTask<T> {
     pub fn new() -> Self {
-        FUTURE_STATE_LIST.with_borrow_mut(|s| {
-            s.push(Box::new(FutureState::<T>::Init));
-            Self { id: s.len() - 1, phantom: PhantomData::default() }
-        })
+        Self { phantom: PhantomData::default(), map: Rc::new(RefCell::new(Box::new(FutureState::<T>::Init))) }
     }
 
     // https://rust-lang.github.io/async-book/02_execution/03_wakeups.html
-    pub fn wake(future_id: usize, result: T) {
-        FUTURE_STATE_LIST.with_borrow_mut(|s| {
-            let future = s[future_id].downcast_mut::<FutureState<T>>().unwrap();
+    pub fn wake(map: &Rc<RefCell<Box<dyn Any>>>, result: T) {
+        let mut map = map.borrow_mut();
+        let future = map.downcast_mut::<FutureState<T>>().unwrap();
 
-            if let FutureState::Pending(ref mut waker) = future { waker.to_owned().wake(); }
-            *future = FutureState::Competed(result);
-        });
+        if let FutureState::Pending(ref mut waker) = future { waker.to_owned().wake(); }
+        *future = FutureState::Competed(result);
     }
 }
 
@@ -112,19 +101,20 @@ mod tests {
 
         // create future
         let future = FutureTask::new();
-        assert_eq!(future.id, 0);
-
-        FUTURE_STATE_LIST.with_borrow_mut(|s| {
-            let state = s[future.id].downcast_mut::<FutureState<bool>>().unwrap();
-            assert_eq!(matches!(state, FutureState::Init), true);
-        });
+        let future_map = future.map.clone();
+        let mut future_borrow = future_map.borrow_mut();
+        let state = future_borrow.downcast_mut::<FutureState<bool>>().unwrap();
+        assert_eq!(matches!(state, FutureState::Init), true);
+        drop(future_borrow);
 
         // wake future
-        FutureTask::wake(future.id, true);
-        FUTURE_STATE_LIST.with_borrow_mut(|s| {
-            let state = s[future.id].downcast_mut::<FutureState<bool>>().unwrap();
-            assert_eq!(matches!(state, FutureState::Competed(true)), true);
-        });
+        let future_map = future.map.clone();
+        FutureTask::wake(&future_map, true);
+        let future_map = future.map.clone();
+        let mut future_borrow = future_map.borrow_mut();
+        let state = future_borrow.downcast_mut::<FutureState<bool>>().unwrap();
+        assert_eq!(matches!(state, FutureState::Competed(true)), true);
+        drop(future_borrow);
 
         // block on future
         let has_run = Rc::new(RefCell::new(false));
