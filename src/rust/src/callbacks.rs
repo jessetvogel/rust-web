@@ -1,10 +1,10 @@
 
-use crate::runtime::RuntimeFuture;
+use crate::runtime::{FutureState, FutureTask};
 use crate::invoke::{Js, JsValue, ObjectRef};
 
 use std::collections::HashMap;
-use std::future::Future;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 thread_local! {
     pub static CALLBACK_HANDLERS: RefCell<HashMap<ObjectRef, Box<dyn FnMut(ObjectRef) + 'static>>> = Default::default();
@@ -41,14 +41,18 @@ pub fn handle_callback(callback_id: u32, param: i32) {
     Js::deallocate(object_ref);
 }
 
-pub fn create_async_callback() -> (ObjectRef, RuntimeFuture<ObjectRef>) {
-    let future = RuntimeFuture::<ObjectRef>::new();
-    let future_id = future.id();
-    let callback_ref = create_callback(move |e| { RuntimeFuture::wake(future_id, e); });
+pub fn create_async_callback() -> (ObjectRef, FutureTask<ObjectRef>) {
+    let future = FutureTask { state: Rc::new(RefCell::new(FutureState::Init)) };
+    let state_clone = future.state.clone();
+    let callback_ref = create_callback(move |e| {
+        let mut future_state = state_clone.borrow_mut();
+        if let FutureState::Pending(ref mut waker) = &mut *future_state { waker.to_owned().wake(); }
+        *future_state = FutureState::Ready(e);
+    });
     return (callback_ref, future);
 }
 
-pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue> + 'static>(code: &str, params_fn: F) -> impl Future<Output = ObjectRef> {
+pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue>>(code: &str, params_fn: F) -> FutureTask<ObjectRef> {
     let (callback_ref, future) = create_async_callback();
     Js::invoke(code, &params_fn(callback_ref));
     future
@@ -92,9 +96,9 @@ mod tests {
         crate::runtime::Runtime::block_on(async move { future.await; });
 
         // remove listener
-        // CALLBACK_HANDLERS.with(|s| { s.lock().map(|mut s| { s.remove(&function_ref); }).unwrap(); });
-        // let count = CALLBACK_HANDLERS.with(|s| s.lock().map(|s| s.len()).unwrap());
-        // assert_eq!(count, 0);
+        CALLBACK_HANDLERS.with(|s| { s.borrow_mut().remove(&function_ref); });
+        let count = CALLBACK_HANDLERS.with(|s| s.borrow().len());
+        assert_eq!(count, 0);
     }
 
 }

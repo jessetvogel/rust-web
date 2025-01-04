@@ -20,8 +20,8 @@ pub fn main() {
     let (callback_ref, future) = create_async_callback();
     Js::invoke("fetch({}).then(r => r.json()).then(r => { {}(r) })", &[url.into(), callback_ref.into()]);
     Runtime::block_on(async move {
-        let object_id = future.await;
-        let result = Js::invoke("return objects[{}].name", &[object_id.into()]).to_str().unwrap();
+        let object_ref = future.await;
+        let result = Js::invoke("return {}.name", &[object_ref.into()]).to_str().unwrap();
         Js::invoke("console.log('invoke fetch', {})", &[result.into()]);
     });
 }

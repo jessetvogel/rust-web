@@ -11,8 +11,8 @@ pub mod router;
 // Use: crate::println!("{}", 42);
 #[macro_export]
 macro_rules! println {
-    ($fmt:expr) => { Js::invoke("console.log({})", &[Str(&format!($fmt))]); };
-    ($fmt:expr, $($arg:tt)*) => { Js::invoke("console.log({})", &[Str(&format!($fmt, $($arg)*))]); };
+    ($fmt:expr) => { Js::invoke("console.log({})", &[format!($fmt).into()]); };
+    ($fmt:expr, $($arg:tt)*) => { Js::invoke("console.log({})", &[format!($fmt, $($arg)*).into()]); };
 }
 
 // Web browser specification
