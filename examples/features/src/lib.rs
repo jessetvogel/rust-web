@@ -5,7 +5,7 @@ use std::cell::RefCell;
 
 use json::JsonValue;
 
-use tinyweb::callbacks::{create_async_callback, promise};
+use tinyweb::callbacks::create_async_callback;
 use tinyweb::router::{Page, Router};
 use tinyweb::runtime::Runtime;
 use tinyweb::signals::Signal;
@@ -56,9 +56,9 @@ fn page1() -> El {
             Runtime::block_on(async move {
                 loop {
                     signal_time.set("⏰ tik");
-                    promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
+                    Runtime::promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
                     signal_time.set("⏰ tok");
-                    promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
+                    Runtime::promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
                 }
             });
 

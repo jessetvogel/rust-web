@@ -1,6 +1,6 @@
 
 use crate::runtime::{FutureState, FutureTask};
-use crate::invoke::{Js, JsValue, ObjectRef};
+use crate::invoke::{Js, ObjectRef};
 
 use std::collections::HashMap;
 use std::cell::RefCell;
@@ -50,12 +50,6 @@ pub fn create_async_callback() -> (ObjectRef, FutureTask<ObjectRef>) {
         *future_state = FutureState::Ready(e);
     });
     return (callback_ref, future);
-}
-
-pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue>>(code: &str, params_fn: F) -> FutureTask<ObjectRef> {
-    let (callback_ref, future) = create_async_callback();
-    Js::invoke(code, &params_fn(callback_ref));
-    future
 }
 
 #[cfg(test)]

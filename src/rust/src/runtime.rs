@@ -7,8 +7,8 @@ use std::{
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker}
 };
 
-use crate::callbacks::create_callback;
-use crate::invoke::Js;
+use crate::callbacks::{create_async_callback, create_callback};
+use crate::invoke::{Js, JsValue, ObjectRef};
 
 pub enum FutureState<T> { Init, Pending(Waker), Ready(T) }
 pub struct FutureTask<T> { pub state: Rc<RefCell<FutureState<T>>> }
@@ -70,6 +70,12 @@ impl Runtime {
 
     pub fn block_on<T: 'static>(future: impl Future<Output = T> + 'static) {
         Self::poll(&Rc::new(RefCell::new(Box::pin(future))));
+    }
+
+    pub fn promise<F: FnOnce(ObjectRef) -> Vec<JsValue>>(code: &str, params_fn: F) -> FutureTask<ObjectRef> {
+        let (callback_ref, future) = create_async_callback();
+        Js::invoke(code, &params_fn(callback_ref));
+        future
     }
 }
 
