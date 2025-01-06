@@ -126,6 +126,7 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 
 ```rs
 use tinyweb::runtime::Runtime;
+use tinyweb::invoke::Js;
 
 Runtime::block_on(async move {
     Runtime::promise("window.setTimeout({},{})", move |c| vec![c.into(), 1_000.into()]).await;
