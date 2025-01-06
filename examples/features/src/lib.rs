@@ -40,12 +40,12 @@ fn page1() -> El {
     let signal_time = Signal::new("-");
 
     El::new("div")
-        .on_mount(move |_| {
+        .once(move |_| {
 
             // add listener
             let body = Js::invoke("return document.querySelector({})", &["body".into()]).to_ref().unwrap();
 
-            El::from(&body).on_event("keydown", move |e| {
+            El::from(&body).on("keydown", move |e| {
                 let key_code = Js::invoke("return {}[{}]", &[e.into(), "keyCode".into()]).to_num().unwrap();
                 let key_name = keycodes::KEYBOARD_MAP[key_code as usize];
                 let text = format!("Pressed: {}", key_name);
@@ -64,35 +64,35 @@ fn page1() -> El {
 
         })
         .classes(&["m-2"])
-        .child(El::new("button").text("api").classes(&BUTTON_CLASSES).on_event_async("click", move |_| async {
+        .child(El::new("button").text("api").classes(&BUTTON_CLASSES).on_async("click", move |_| async {
             let url = format!("https://pokeapi.co/api/v2/pokemon/{}", 1);
             let result = fetch_json("GET", &url, None).await.unwrap();
             let name = result["name"].as_str().unwrap();
             Js::invoke("alert({})", &[name.into()]);
         }))
-        .child(El::new("button").text("page 2").classes(&BUTTON_CLASSES).on_event("click", move |_| {
+        .child(El::new("button").text("page 2").classes(&BUTTON_CLASSES).on("click", move |_| {
             ROUTER.with(|s| { s.borrow().navigate("/page2"); });
         }))
         .child(El::new("br"))
-        .child(El::new("button").text("add").classes(&BUTTON_CLASSES).on_event("click", move |_| {
+        .child(El::new("button").text("add").classes(&BUTTON_CLASSES).on("click", move |_| {
             let count = signal_count.get() + 1;
             signal_count.set(count);
         }))
-        .child(El::new("div").text("0").on_mount(move |el| {
-            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el.element.into(), v.to_string().into()]); });
+        .child(El::new("div").text("0").once(move |el| {
+            signal_count.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el.into(), v.to_string().into()]); });
         }))
-        .child(El::new("div").text("-").on_mount(move |el| {
-            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el.element.into(), v.into()]); });
+        .child(El::new("div").text("-").once(move |el| {
+            signal_time.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el.into(), v.into()]); });
         }))
-        .child(El::new("div").text("-").on_mount(move |el| {
-            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el.element.into(), v.into()]); });
+        .child(El::new("div").text("-").once(move |el| {
+            signal_key.on(move |v| { Js::invoke("{}.innerHTML = {}", &[el.into(), v.into()]); });
         }))
 }
 
 fn page2() -> El {
     El::new("div")
         .classes(&["m-2"])
-        .child(El::new("button").text("page 1").classes(&BUTTON_CLASSES).on_event("click", move |_| {
+        .child(El::new("button").text("page 1").classes(&BUTTON_CLASSES).on("click", move |_| {
             ROUTER.with(|s| { s.borrow().navigate("/page1"); });
         }))
 }

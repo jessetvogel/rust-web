@@ -52,21 +52,24 @@ impl El {
         }
         self
     }
-    pub fn on_mount(self, mut cb: impl FnMut(&'static Self) + 'static) -> Self {
-        cb(Box::leak(Box::new(self.to_owned())));
+    pub fn once(self, cb: impl FnMut(ObjectRef) + 'static) -> Self {
+
+        let cb = Rc::new(RefCell::new(cb));
+        cb.borrow_mut()(self.element);
+
         self
     }
-    pub fn on_mount_async<Fut: Future<Output = ()>>(self, mut cb: impl FnMut(&'static Self) -> Fut + 'static) -> Self {
+    pub fn once_async<Fut: Future<Output = ()>>(self, cb: impl FnMut(ObjectRef) -> Fut + 'static) -> Self {
 
-        let self_leak = Box::leak(Box::new(self.to_owned()));
+        let cb = Rc::new(RefCell::new(cb));
 
         Runtime::block_on(async move {
-            cb(self_leak).await;
+            cb.borrow_mut()(self.element).await;
         });
 
         self
     }
-    pub fn on_event(self, event: &str, cb: impl FnMut(ObjectRef) + 'static) -> Self {
+    pub fn on(self, event: &str, cb: impl FnMut(ObjectRef) + 'static) -> Self {
 
         let function_ref = crate::callbacks::create_callback(cb);
         let code = &format!("{{}}.addEventListener('{}',{{}})", event);
@@ -76,7 +79,7 @@ impl El {
 
         self
     }
-    pub fn on_event_async<Fut: Future<Output = ()>>(self, event: &str, cb: impl FnMut(ObjectRef) -> Fut + 'static) -> Self {
+    pub fn on_async<Fut: Future<Output = ()>>(self, event: &str, cb: impl FnMut(ObjectRef) -> Fut + 'static) -> Self {
 
         let cb = Rc::new(RefCell::new(cb));
         let cb_async = move |e| {
