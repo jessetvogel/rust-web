@@ -27,6 +27,7 @@ Enables client-side applications to be built in pure Rust, similar to backend ap
 ### Create a new project
 
 Create a new Rust project with `cargo new tinyweb-example --lib`
+
 Then run `cargo add tinyweb --git https://github.com/LiveDuo/tinyweb`
 
 Update the `src/lib.rs`:
