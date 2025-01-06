@@ -35,7 +35,7 @@ use tinyweb::invoke::Js;
 
 fn component() -> El {
     El::new("div")
-        .child(El::new("button").text("print").on_event("click", move |_| {
+        .child(El::new("button").text("print").on("click", move |_| {
             Js::invoke("alert('hello browser')", &[]);
         }))
 }
@@ -95,7 +95,7 @@ use tinyweb::element::El;
 
 let signal_count = Signal::new(0);
 
-El::new("button").text("add").on_event("click", move |_| {
+El::new("button").text("add").on("click", move |_| {
     let count = signal_count.get() + 1;
     signal_count.set(count);
 });
