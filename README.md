@@ -26,11 +26,9 @@ Enables client-side applications to be built in pure Rust, similar to backend ap
 
 ### Create a new project
 
-Create a new Rust project with `cargo new tinyweb-example --lib`
+1. Create a new Rust project with `cargo new tinyweb-example --lib`. Add `crate-type =["cdylib"]` in `Cargo.toml` and install the crate with `cargo add tinyweb --git https://github.com/LiveDuo/tinyweb`.
 
-Then run `cargo add tinyweb --git https://github.com/LiveDuo/tinyweb`
-
-Update the `src/lib.rs`:
+2. Update the `src/lib.rs`:
 ```rs
 use tinyweb::element::El;
 use tinyweb::invoke::Js;
@@ -49,7 +47,7 @@ pub fn main() {
 }
 ```
 
-Then, create an `index.html` in a new `public` folder:
+3. Create an `index.html` in a new `public` folder:
 ```html
 <!DOCTYPE html>
 <html>
@@ -62,9 +60,9 @@ Then, create an `index.html` in a new `public` folder:
 </html>
 ```
 
-Lastly, add `crate-type =["cdylib"]` right below `[lib]` section in `Cargo.toml`.
 
-Then build the project with `cargo build --target wasm32-unknown-unknown -r` and `cp target/wasm32-unknown-unknown/release/*.wasm public/client.wasm` to get the `.wasm` in the right place. Then serve the `public` folder with any static http server.
+
+4. Build the project with `cargo build --target wasm32-unknown-unknown -r`. Then `cp target/wasm32-unknown-unknown/release/*.wasm public/client.wasm` to get the `.wasm` in the right place and serve the `public` folder with any static http server.
 
 
 
