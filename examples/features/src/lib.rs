@@ -103,6 +103,6 @@ pub fn main() {
     std::panic::set_hook(Box::new(|e| { Js::invoke("console.log({})", &[e.to_string().into()]); }));
 
     // init router
-    let pages = &[Page::new("/page1", page1(), None), Page::new("/page2", page2(), None)];
+    let pages = &[Page::new("/page1", page1()), Page::new("/page2", page2())];
     ROUTER.with(|s| { *s.borrow_mut() = Router::new("body", pages); });
 }
