@@ -116,7 +116,7 @@ thread_local! {
 }
 
 // initialize router
-let pages = &[Page::new("/page1", page_component(), None)];
+let pages = &[Page::new("/page1", page_component())];
 ROUTER.with(|s| { *s.borrow_mut() = Router::new("body", pages); });
 
 // navigate to route
