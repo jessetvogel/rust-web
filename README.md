@@ -9,8 +9,6 @@ TinyWeb is a toolkit for building web applications focused on both correctness a
 Enables client-side applications to be built in pure Rust, similar to backend applications, leveraging the language strict type system and great built-in tooling. Has a tiny footprint with less than 800 lines of code, has no build step and no external dependencies.
 
 
-[![Tutorial](https://raw.githubusercontent.com/LiveDuo/tinyweb/master/.github/assets/tinyweb-youtube.jpg)](https://www.youtube.com/watch?v=44P3IVnjEqo "Tutorial")
-
 # Features
 
 - No Javascript
@@ -26,6 +24,8 @@ Enables client-side applications to be built in pure Rust, similar to backend ap
 ### Use the starter project
 
 - Fork the [tinyweb-starter](https://github.com/LiveDuo/tinyweb-starter) project
+
+[![Tutorial](https://raw.githubusercontent.com/LiveDuo/tinyweb/master/.github/assets/tinyweb-youtube.jpg)](https://www.youtube.com/watch?v=44P3IVnjEqo "Tutorial")
 
 ### Create a new project
 
