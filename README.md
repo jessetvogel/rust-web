@@ -178,6 +178,9 @@ Need benchmarks to see how this library performs against other Rust web framewor
 
 # Backstory
 
+<details>
+<summary>Show</summary>
+
 For quite some time, I couldn't decide if I like Typescript or not. On one hand, it offers stronger typing than pure JavaScript, providing more confidence in the code; but on the other hand, it comes with a heavy build system that complicates things and makes debugging significantly harder.
 
 When I had to build an application where I really cared about correctness, I realized how much I didn't trust Typescript even for what's designed to do and I tried different Rust based web frameworks instead. While these frameworks alleviated correctness concerns, they introduced significant complexity, requiring hundreds of dependencies just to get started. For reference, `leptos` depends on 231 crates and its development tool `cargo-leptos` depends on another 485 crates.
@@ -187,6 +190,8 @@ Many of these dependencies come from the `wasm-bindgen` crate, which generates R
 Yet, using this crate is not the only way to interact with browser APIs and many applications could benefit from a different tool that makes different tradeoffs. In particular, many applications might benefit from simplicity and ease of debugging, I know the application I'm building probably would.
 
 So, I set out to build a web framework that allows to build client side applications with Rust and has minimal footprint. The result is `TinyWeb`, a client side Rust framework built in <800 lines of code.
+
+</details>
 
 # Credits
 
