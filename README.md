@@ -143,7 +143,7 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 
 ### Components & Utilities
 
-For better or worst it's common in web development to use libraries for various tasks. Here are some ideas for commonly used utlities and UI components.
+While this library tries to be minimal and has no dependencies the reality in web development is using libraries and ready-made components especially for a few slightly annoying tasks. Here are some ideas for commonly used utlities and UI components. Utilities can be included in the `examples` folder while components can be stored in a new `components` folder in this repo.
 
 <details>
 <summary>Commonly used utilities</summary>
@@ -153,8 +153,6 @@ For better or worst it's common in web development to use libraries for various 
 - [ ] Drag & drop / resize
 - [ ] File upload
 - [ ] Markdown rendering
-
-NOTE: Add utilities to the `examples` folder
 
 </details>
 
@@ -167,8 +165,6 @@ NOTE: Add utilities to the `examples` folder
 - [ ] Modals, tooltips and toasts
 - [ ] Date / time pickers
 - [ ] Chart / visualization
-
-NOTE: Add components to a new `components` folder
 
 </details>
 
