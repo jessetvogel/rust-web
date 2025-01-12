@@ -152,6 +152,8 @@ For better or worst it's common in web development to use libraries for various 
 <details>
 <summary>Commonly used utilities</summary>
 
+<br>
+
 - [ ] Drag & drop / resize
 - [ ] File upload
 - [ ] Markdown rendering
@@ -162,6 +164,8 @@ Maybe implement the utilities in the `examples` folder.
 
 <details>
 <summary>Commonly used components</summary>
+
+<br>
 
 - [ ] Table components
 - [ ] Modals, tooltips and toasts
