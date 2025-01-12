@@ -141,10 +141,6 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 
 # Roadmap
 
-### Static analysis
-
-Right now `invoke` calls to the browser APIs are not type safe. Could  use [webidl](https://github.com/whatwg/webidl) interfaces to do static analysis on the Javascript code against `invoke` parameters.
-
 ### Components
 
 For better or worst it's common in web development to use libraries for various tasks. Here are some ideas for commonly used utlities and UI components.
@@ -179,6 +175,11 @@ NOTE: Add components to a new `components` folder
 ### Benchmarks & Memory
 
 Need benchmarks to see how this library performs against other Rust web frameworks but also against different Javascript frameworks. Need also profiling to evaluate if there are memory leaks in either Rust side or Javascript side of the library and to figure out if the compiled WASM size can be reduced further.
+
+### Static analysis
+
+Right now `invoke` calls to the browser APIs are not type safe. Could  use [webidl](https://github.com/whatwg/webidl) interfaces to do static analysis on the Javascript code against `invoke` parameters.
+
 
 # Backstory
 
