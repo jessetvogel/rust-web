@@ -139,6 +139,35 @@ Runtime::block_on(async move {
 
 Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examples/features/src/lib.rs)
 
+# Roadmap
+
+### Static analysis
+
+Right now `invoke` calls to the browser APIs are not type safe. One idea to use [webidl](https://github.com/whatwg/webidl) interfaces to do static analysis on the parameters that are passed to `invoke`.
+
+### Components
+
+For better or worst it's common in web development to use libraries for various tasks.
+
+Commonly used utilities:
+[] Drag & drop / resize
+[] File upload
+[] Markdown rendering
+
+Maybe implement the utilities in the `examples` folder.
+
+Commonly used components:
+[] Table components
+[] Modals, tooltips and toasts
+[] Date / time pickers
+[] Chart / visualization
+
+Could create a `components` folder to have components in.
+
+### Benchmarks & Memory
+
+Need benchmarks to see how this library performs against other Rust web frameworks but also against Javascript frameworks. Need also profiling to evaluate if there are memory leaks in either Rust side or Javascript side of the library.
+
 # Backstory
 
 For quite some time, I couldn't decide if I like Typescript or not. On one hand, it offers stronger typing than pure JavaScript, providing more confidence in the code; but on the other hand, it comes with a heavy build system that complicates things and makes debugging significantly harder.
