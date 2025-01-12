@@ -143,11 +143,11 @@ Check it out [here](https://github.com/LiveDuo/tinyweb/blob/feature/readme/examp
 
 ### Static analysis
 
-Right now `invoke` calls to the browser APIs are not type safe. One idea to use [webidl](https://github.com/whatwg/webidl) interfaces to do static analysis on the parameters that are passed to `invoke`.
+Right now `invoke` calls to the browser APIs are not type safe. Could  use [webidl](https://github.com/whatwg/webidl) interfaces to do static analysis on the Javascript code against `invoke` parameters.
 
 ### Components
 
-For better or worst it's common in web development to use libraries for various tasks.
+For better or worst it's common in web development to use libraries for various tasks. Here are some ideas for commonly used utlities and UI components.
 
 <details>
 <summary>Commonly used utilities</summary>
@@ -158,7 +158,7 @@ For better or worst it's common in web development to use libraries for various 
 - [ ] File upload
 - [ ] Markdown rendering
 
-Maybe implement the utilities in the `examples` folder.
+NOTE: Add utilities to the `examples` folder
 
 </details>
 
@@ -172,13 +172,13 @@ Maybe implement the utilities in the `examples` folder.
 - [ ] Date / time pickers
 - [ ] Chart / visualization
 
-Could create a `components` folder to have components in.
+NOTE: Add components to a new `components` folder
 
 </details>
 
 ### Benchmarks & Memory
 
-Need benchmarks to see how this library performs against other Rust web frameworks but also against Javascript frameworks. Need also profiling to evaluate if there are memory leaks in either Rust side or Javascript side of the library.
+Need benchmarks to see how this library performs against other Rust web frameworks but also against different Javascript frameworks. Need also profiling to evaluate if there are memory leaks in either Rust side or Javascript side of the library and to figure out if the compiled WASM size can be reduced further.
 
 # Backstory
 
