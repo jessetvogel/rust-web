@@ -151,18 +151,18 @@ For better or worst it's common in web development to use libraries for various 
 
 Commonly used utilities:
 
-[ ] Drag & drop / resize
-[ ] File upload
-[ ] Markdown rendering
+- [ ] Drag & drop / resize
+- [ ] File upload
+- [ ] Markdown rendering
 
 Maybe implement the utilities in the `examples` folder.
 
 Commonly used components:
 
-[ ] Table components
-[ ] Modals, tooltips and toasts
-[ ] Date / time pickers
-[ ] Chart / visualization
+- [ ] Table components
+- [ ] Modals, tooltips and toasts
+- [ ] Date / time pickers
+- [ ] Chart / visualization
 
 Could create a `components` folder to have components in.
 
