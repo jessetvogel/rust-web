@@ -150,6 +150,7 @@ Right now `invoke` calls to the browser APIs are not type safe. One idea to use 
 For better or worst it's common in web development to use libraries for various tasks.
 
 Commonly used utilities:
+
 [] Drag & drop / resize
 [] File upload
 [] Markdown rendering
@@ -157,6 +158,7 @@ Commonly used utilities:
 Maybe implement the utilities in the `examples` folder.
 
 Commonly used components:
+
 [] Table components
 [] Modals, tooltips and toasts
 [] Date / time pickers
