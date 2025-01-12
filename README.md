@@ -147,7 +147,7 @@ When I had to build an application where I really cared about correctness, I rea
 
 Many of these dependencies come from the `wasm-bindgen` crate, which generates Rust bindings for browser APIs and the JavaScript glue code needed for these calls and is used almost universally by Rust based web frameworks as a lower level building block for accessing browser APIs.
 
-Yet, using this crate is not the only way to interact with browser APIs and many applications could benefit from a different tool that makes different tradeoffs. In particular, many applications might benefit from simplicity and ease of debuggging, I know the application I'm building probably would.
+Yet, using this crate is not the only way to interact with browser APIs and many applications could benefit from a different tool that makes different tradeoffs. In particular, many applications might benefit from simplicity and ease of debugging, I know the application I'm building probably would.
 
 So, I set out to build a web framework that allows to build client side applications with Rust and has minimal footprint. The result is `TinyWeb`, a client side Rust framework built in <800 lines of code.
 
