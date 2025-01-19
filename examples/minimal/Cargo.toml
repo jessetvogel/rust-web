@@ -8,5 +8,4 @@ crate-type =["cdylib"]
 test = false
 
 [dependencies]
-tinyweb = { path = "../../src/rust" }
-
+web = { path = "../../src/rust" }

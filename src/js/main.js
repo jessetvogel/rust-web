@@ -2,104 +2,159 @@
 
 let wasmModule = {}
 
+const encoder = new TextEncoder()
+const decoder = new TextDecoder()
+
 const objects = []
+const free = []
 
-const textEncoder = new TextEncoder()
-const textDecoder = new TextDecoder()
+function storeObject(object) {
+    const id = free.pop()
+    if (id !== undefined) {
+        objects[id] = object
+        return id
+    }
+    objects.push(object)
+    return objects.length - 1
+}
 
-const readParamsFromMemory = (ptr, len) => {
+function serializeF64(f) {
+    const buffer = new ArrayBuffer(8)
+    const view = new DataView(buffer)
+    view.setFloat64(0, f, true)
+    return new Uint8Array(buffer)
+}
 
-    const memory = new Uint8Array(wasmModule.instance.exports.memory.buffer)
-    const params = new Uint8Array(memory.slice(ptr, ptr + len))
-    const dataView = new DataView(params.buffer)
+function serializeBigInt(i) {
+    const buffer = new ArrayBuffer(8)
+    const view = new DataView(buffer)
+    view.setBigInt64(0, i, true)
+    return new Uint8Array(buffer)
+}
+
+function serializeU32(i) {
+    const buffer = new ArrayBuffer(4)
+    const view = new DataView(buffer)
+    view.setUint32(0, i, true)
+    return new Uint8Array(buffer)
+}
+
+function serialize(values) {
+    const buffer = []
+
+    const length = values.length
+    buffer.push(...new Uint8Array(new Uint32Array([length]).buffer))
+
+    for (const value of values) {
+        if (value === undefined) {
+            buffer.push(0x00)
+        } else if (value === null) {
+            buffer.push(0x01)
+        } else if (typeof value === 'boolean') {
+            buffer.push(value ? 0x02 : 0x03)
+        } else if (typeof value === 'number') {
+            buffer.push(0x04)
+            buffer.push(...serializeF64(value))
+        } else if (typeof value === 'bigint') {
+            buffer.push(0x05)
+            buffer.push(...serializeBigInt(value))
+        } else if (typeof value === 'string') {
+            buffer.push(0x06)
+            const encoded = encoder.encode(value)
+            buffer.push(...serializeU32(encoded.length))
+            buffer.push(...encoded)
+        } else if (value instanceof Uint8Array) {
+            buffer.push(0x09)
+            buffer.push(...serializeU32(value.length))
+            buffer.push(...value)
+        } else if (typeof value === 'object') {
+            buffer.push(Array.isArray(value) ? 0x07 : 0x08)
+            buffer.push(...serializeU32(storeObject(value)))
+        } else {
+            throw new Error(`could not serialize object of type ${typeof value}`)
+        }
+    }
+
+    return new Uint8Array(buffer)
+}
+
+function deserialize(buffer) {
+    const view = new DataView(buffer.buffer)
     const values = []
-    let i = 0
-    while (i < params.length) {
-        if (params[i] === 0) { // undefined
+    let i = 4 // first 4 bytes encode number of values
+    while (i < buffer.length) {
+        let x = buffer[i]
+        if (x == 0x00) {
             values.push(undefined)
             i += 1
-        } else if (params[i] === 1) { // null
+        } else if (x == 0x01) {
             values.push(null)
             i += 1
-        } else if (params[i] === 2) { // f64
-            values.push(dataView.getFloat64(i + 1, true))
-            i += 1 + 8
-        } else if (params[i] === 3) { // big int
-            values.push(dataView.getBigInt64(i + 1, true))
-            i += 1 + 8
-        } else if (params[i] === 4) { // string
-            const ptr = dataView.getInt32(i + 1, true)
-            const len = dataView.getInt32(i + 1 + 4, true)
-            values.push(textDecoder.decode(memory.subarray(ptr, ptr + len)))
-            i += 1 + 4 + 4
-        } else if (params[i] === 5) { // true
+        } else if (x == 0x02) {
             values.push(true)
             i += 1
-        } else if (params[i] === 6) { // false
+        } else if (x == 0x03) {
             values.push(false)
             i += 1
-        } else if (params[i] === 7) { // object ref
-            const objectId = dataView.getUint32(i + 1, true)
-            values.push(objects[objectId])
+        } else if (x == 0x04) {
+            values.push(view.getFloat64(i + 1, true))
+            i += 1 + 8
+        } else if (x == 0x05) {
+            values.push(view.getBigInt64(i + 1, true))
+            i += 1 + 8
+        } else if (x == 0x06) {
+            const len = view.getUint32(i + 1, true)
+            values.push(decoder.decode(buffer.subarray(i + 1 + 4, i + 1 + 4 + len)))
+            i += 1 + 4 + len
+        } else if (x == 0x07 || x == 0x08) {
+            const id = view.getUint32(i + 1, true)
+            values.push(objects[id])
             i += 1 + 4
+        } else if (x == 0x09) {
+            const len = view.getUint32(i + 1, true)
+            values.push(buffer.subarray(i + 1 + 4, i + 1 + 4 + len))
+            i += 1 + 4 + len
         } else {
-            throw new Error('Invalid parameter type')
+            throw new Error(`invalid parameter type (0x${x.toString(16)})`)
         }
     }
     return values
 }
 
-const runFunction = (c_ptr, c_len, p_ptr, p_len) => {
-  const memory = new Uint8Array(wasmModule.instance.exports.memory.buffer)
-  const functionBody = textDecoder.decode(memory.subarray(c_ptr, c_ptr + c_len))
-  const _function = Function(`'use strict';return(${functionBody})`)()
-
-  const values = readParamsFromMemory(p_ptr, p_len)
-  return _function.call({}, ...values)
-}
-
-const getWasmImports = () => {
-
+function getWasmImports() {
     const env = {
-        __invoke (c_ptr, c_len, p_ptr, p_len) {
-            const result = runFunction(c_ptr, c_len, p_ptr, p_len)
-            if (typeof result === "undefined") {
-              return (BigInt(0) << 32n) | BigInt(0)
-            }  else if (typeof result === "number") {
-              const ptr = writeBufferToMemory(textEncoder.encode(result))
-              return (BigInt(1) << 32n) | BigInt(ptr)
-            } else if (typeof result === "function") {
-              objects.push(result)
-              return (BigInt(2) << 32n) | BigInt(objects.length - 1)
-            } else if (typeof result === "object") {
-              // because js has no primitive types for arrays
-              if (result instanceof Uint8Array) {
-                const ptr = writeBufferToMemory(new Uint8Array(result))
-                return (BigInt(3) << 32n) | BigInt(ptr)
-              } else {
-                objects.push(result)
-                return (BigInt(2) << 32n) | BigInt(objects.length - 1)
-              }
-            } else if (typeof result === "string") {
-              const ptr = writeBufferToMemory(textEncoder.encode(result))
-              return (BigInt(4) << 32n) | BigInt(ptr)
-            } else if (typeof result === "bigint") {
-              return (BigInt(5) << 32n) | BigInt(result)
-            } else if (typeof result === "boolean") {
-              return (BigInt(6) << 32n) | BigInt(result)
-            } else {
-              throw new Error("Invalid result type")
-            }
+        __invoke(c_ptr, c_len, p_ptr, p_len) {
+            const funcBody = decoder.decode(readBufferFromMemory(c_ptr, c_len));
+            const func = Function(`'use strict';return(${funcBody})`)()
+            const values = deserialize(readBufferFromMemory(p_ptr, p_len))
+            const result = func.call({}, ...values)
+            writeBufferToMemory(serialize([result]))
         },
-      __deallocate(object_id) {
-          const index = objects.indexOf(object_id)
-          objects.splice(index, 1);
-      }
+        __free_object(id) {
+            objects[id] = undefined
+            free.push(id)
+        },
+        __query_selector(q_ptr, q_len) {
+            const query = decoder.decode(readBufferFromMemory(q_ptr, q_len));
+            const result = document.querySelector(query);
+            writeBufferToMemory(serialize([result]))
+        }
     }
     return { env }
 }
 
-const loadWasm = async () => {
+function readBufferFromMemory(ptr, len) {
+    const memory = new Uint8Array(wasmModule.instance.exports.memory.buffer)
+    return new Uint8Array(memory.subarray(ptr, ptr + len))
+}
+
+function writeBufferToMemory(buffer) {
+    const ptr = wasmModule.instance.exports.get_allocation(buffer.length)
+    const memory = new Uint8Array(wasmModule.instance.exports.memory.buffer)
+    memory.set(buffer, ptr)
+}
+
+async function init() {
     const imports = getWasmImports()
     const wasmScript = document.querySelector('script[type="application/wasm"]')
     const wasmBuffer = await fetch(wasmScript.src).then(r => r.arrayBuffer())
@@ -107,22 +162,4 @@ const loadWasm = async () => {
     wasmModule.instance.exports.main()
 }
 
-const writeBufferToMemory = (buffer) => {
-    const allocationId = wasmModule.instance.exports.create_allocation(buffer.length)
-    const allocationPtr = wasmModule.instance.exports.get_allocation(allocationId)
-    const memory = new Uint8Array(wasmModule.instance.exports.memory.buffer)
-    memory.set(buffer, allocationPtr)
-    return allocationId
-}
-
-const loadExports = () => {
-    exports.wasmModule = wasmModule
-    exports.writeBufferToMemory = writeBufferToMemory
-    exports.readParamsFromMemory = readParamsFromMemory
-}
-
-if (typeof window !== 'undefined') { // load wasm (browser)
-    document.addEventListener('DOMContentLoaded', loadWasm)
-} else { // load exports (nodejs)
-    loadExports()
-}
+document.addEventListener('DOMContentLoaded', init)
