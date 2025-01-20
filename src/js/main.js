@@ -136,8 +136,18 @@ function getWasmImports() {
         },
         __query_selector(q_ptr, q_len) {
             const query = decoder.decode(readBufferFromMemory(q_ptr, q_len));
-            const result = document.querySelector(query);
-            writeBufferToMemory(serialize([result]))
+            writeBufferToMemory(serialize([document.querySelector(query)]));
+        },
+        __create_element(t_ptr, t_len) {
+            const tag = decoder.decode(readBufferFromMemory(t_ptr, t_len));
+            writeBufferToMemory(serialize([document.createElement(tag)]));
+        },
+        __add_event_listener(object_id, e_ptr, e_len, callback_id) {
+            const object = objects[object_id];
+            const event = decoder.decode(readBufferFromMemory(e_ptr, e_len));
+            object.addEventListener(event, (event) => {
+                wasmModule.instance.exports.call_callback(callback_id, storeObject(event));
+            });
         }
     }
     return { env }

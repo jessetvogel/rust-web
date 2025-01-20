@@ -1,7 +1,11 @@
-use crate::js::{Js, ObjectRef};
+use crate::{
+    callbacks::add_event_listener,
+    console_error,
+    js::{self, ObjectRef},
+};
 use std::cell::RefCell;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Elem {
     pub element: ObjectRef,
     pub callbacks: RefCell<Vec<ObjectRef>>,
@@ -9,80 +13,87 @@ pub struct Elem {
 
 impl Elem {
     pub fn new(tag: &str) -> Self {
-        let elem = Js::invoke("return document.createElement({})", &[tag.into()])
-            .to_ref()
-            .unwrap();
+        let element = match js::create_element(tag).to_ref() {
+            Ok(r) => r,
+            Err(_) => {
+                console_error!("Failed to created element with tag '{}'", tag,);
+                panic!();
+            }
+        };
         Self {
-            element: elem,
+            element,
             callbacks: RefCell::new(vec![]),
         }
     }
 
-    pub fn append(&self, child: &Elem) -> &Self {
-        Js::invoke(
+    pub fn select(query: &str) -> Self {
+        Self::from(&match js::query_selector(query).to_ref() {
+            Ok(r) => r,
+            Err(_) => {
+                console_error!("Failed to select element with query '{}'", query);
+                panic!();
+            }
+        })
+    }
+
+    pub fn append(self, child: &Elem) -> Self {
+        js::invoke(
             "{}.append({})",
             &[self.element.clone().into(), child.element.clone().into()],
         );
-        &self
+        self
     }
 
     pub fn remove(self) {
-        Js::invoke("{}.remove()", &[self.element.into()]);
+        js::invoke("{}.remove()", &[self.element.into()]);
     }
 
-    pub fn attr(&self, name: &str, value: &str) -> &Self {
-        Js::invoke(
+    pub fn attr(self, name: &str, value: &str) -> Self {
+        js::invoke(
             "{}.setAttribute({},{})",
             &[self.element.clone().into(), name.into(), value.into()],
         );
-        &self
+        self
     }
 
-    pub fn classes(&self, classes: &[&str]) -> &Self {
+    pub fn classes(self, classes: &[&str]) -> Self {
         classes.iter().for_each(|&c| {
-            Js::invoke(
+            js::invoke(
                 "{}.classList.add({})",
                 &[self.element.clone().into(), c.into()],
             );
         });
-        &self
+        self
     }
 
-    pub fn children(&self, children: &[Self]) -> &Self {
-        Js::invoke(
+    pub fn children(self, children: &[&Self]) -> Self {
+        js::invoke(
             "{}.innerHTML = {}",
             &[self.element.clone().into(), "".into()],
         );
         for child in children {
-            Js::invoke(
+            js::invoke(
                 "{}.appendChild({})",
                 &[self.element.clone().into(), child.element.clone().into()],
             );
         }
-        &self
+        self
     }
 
-    // pub fn on(&self, event: &str, cb: impl FnMut(ObjectRef) + 'static) -> &Self {
-    //     let function_ref = crate::callbacks::create_callback(cb);
-    //     let code = &format!("{{}}.addEventListener('{}',{{}})", event);
-    //     Js::invoke(
-    //         code,
-    //         &[self.element.clone().into(), function_ref.clone().into()],
-    //     );
-    //     self.callbacks.borrow_mut().push(function_ref);
-    //     &self
-    // }
+    pub fn on(self, event: &str, callback: impl FnMut(ObjectRef) + 'static) -> Self {
+        add_event_listener(&self.element, event, callback);
+        self
+    }
 
-    pub fn text(&self, text: &str) -> &Self {
-        let el = Js::invoke("return document.createTextNode({})", &[text.into()])
+    pub fn text(self, text: &str) -> Self {
+        let text = js::invoke("return document.createTextNode({})", &[text.into()])
             .to_ref()
             .unwrap();
-        Js::invoke(
+        js::invoke(
             "{}.appendChild({})",
-            &[self.element.clone().into(), el.into()],
+            &[self.element.clone().into(), text.into()],
         );
-
-        &self
+        self
     }
 }
 

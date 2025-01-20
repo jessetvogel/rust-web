@@ -10,6 +10,7 @@ thread_local! {
 extern "C" {
     fn __invoke(c_ptr: *const u8, c_len: u32, p_ptr: *const u8, p_len: u32);
     fn __free_object(id: u32);
+    fn __create_element(t_ptr: *const u8, t_len: u32);
     fn __query_selector(q_ptr: *const u8, q_len: u32);
 }
 
@@ -91,6 +92,16 @@ pub fn invoke(code: &str, params: &[JsValue]) -> JsValue {
 
 pub fn query_selector(query: &str) -> JsValue {
     unsafe { __query_selector(query.as_ptr(), query.len() as u32) };
+
+    let values = ALLOCATION
+        .with_borrow(|buffer| deserialize(buffer))
+        .expect("invalid response from JS");
+
+    values.into_iter().next().unwrap_or(JsValue::Undefined)
+}
+
+pub fn create_element(tag: &str) -> JsValue {
+    unsafe { __create_element(tag.as_ptr(), tag.len() as u32) };
 
     let values = ALLOCATION
         .with_borrow(|buffer| deserialize(buffer))
