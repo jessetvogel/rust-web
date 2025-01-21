@@ -26,41 +26,32 @@ pub fn main() {
     );
 
     // Create some layout
-    let body = Elem::select("body");
+    let body = Elem::select("body").unwrap();
 
     console_log!("[RUST] body id = {}", body.element.id());
 
-    let body = body.classes(&["bg-gray-800"]);
+    let body = body.class("bg-gray-800");
 
     let body = body.append(
         &Elem::new("div")
-            .classes(&[
-                "flex",
-                "flex-row",
-                "gap-40",
-                "w-screen",
-                "justify-around",
-                "p-4",
-            ])
+            .class("flex flex-row gap-40 w-screen justify-around p-4")
             .children(&[
-                Button::new("Click me!").to_elem(),
+                &Button::new("Click me!").to_elem(),
                 Button::new("No, click me!").to_elem(),
                 Button::new("Or me!").to_elem(),
             ]),
     );
 
-    let text = Elem::new("span").classes(&["text-red-800"]);
+    let text = Elem::new("span").class("text-red-800");
 
     let body = body.append(&text);
 
-    let input = Elem::new("input")
-        .classes(&["m-8"])
-        .on("input", move |event| {
-            let value = js::invoke("return {}.target.value", &[event.into()])
-                .to_string()
-                .unwrap();
-            text.clone().children(&[&Elem::new("span").text(&value)]);
-        });
+    let input = Elem::new("input").class("m-8").on("input", move |event| {
+        let value = js::invoke("return {}.target.value", &[event.into()])
+            .to_string()
+            .unwrap();
+        text.clone().children(&[&Elem::new("span").text(&value)]);
+    });
 
     body.append(&input);
 }
